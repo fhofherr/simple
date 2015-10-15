@@ -6,6 +6,8 @@
   :scm {:name "git"
         :url "https://github.com/fhofherr/simple"}
   :dependencies [[org.clojure/clojure "1.7.0"]]
-  :main ^:skip-aot simple.core
+  :main ^:skip-aot simple.main
   :target-path "target/%s"
+  :test-selectors {:unit (complement :integration)
+                   :integration :integration}
   :profiles {:uberjar {:aot :all}})
