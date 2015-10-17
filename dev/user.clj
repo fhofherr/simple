@@ -4,7 +4,7 @@
 
 (defn- do-run-unit-tests
   []
-  (t/run-all-tests #"fhofherr.simple\.test(\..+)-test"))
+  (t/run-all-tests #"fhofherr.(simple|clj-io)\.test(\..+)-test"))
 
 (defn- do-run-integration-tests
   []
