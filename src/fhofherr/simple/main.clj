@@ -1,4 +1,4 @@
-(ns simple.main
+(ns fhofherr.simple.main
   (:require [clojure.java.shell :refer [sh]]
             [clojure.java.io :as io])
   (:gen-class))

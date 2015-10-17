@@ -1,6 +1,6 @@
-(ns simple.main-test
+(ns fhofherr.simple.integration-test.main-test
   (:require [clojure.test :refer :all]
-            [simple.main :as main]))
+            [fhofherr.simple.main :as main]))
 
 (deftest ^:integration execute-shell-scripts
 
