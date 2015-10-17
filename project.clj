@@ -11,6 +11,7 @@
   :test-selectors {:unit (complement :integration)
                    :integration :integration}
   :profiles {:dev {:source-paths ["dev"]
-                   :resource-paths ["dev-resources"]
+                   :resource-paths ["dev-resources" "test-resources"]
                    :dependencies [[org.clojure/tools.namespace "0.2.11"]]}
+             :test {:resource-paths ["test-resources"]}
              :uberjar {:aot :all}})

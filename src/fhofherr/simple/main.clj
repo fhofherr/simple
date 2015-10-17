@@ -1,13 +1,13 @@
 (ns fhofherr.simple.main
-  (:require [clojure.java.shell :refer [sh]]
-            [clojure.java.io :as io])
+  (:require [clojure.java.io :as io]
+            [fhofherr.simple.project :as prj])
   (:gen-class))
 
 (defn run
   [project-dir]
   {:pre [(not-empty project-dir)
          (.isDirectory (io/as-file project-dir))]}
-  (if (= 0 (:exit (sh (str project-dir "/run_tests.sh"))))
+  (if (= 0 (:exit ((prj/execute "run_tests.sh") {:project-dir project-dir})))
     (println "Tests successful!")
     (println "Tests failed!")))
 
