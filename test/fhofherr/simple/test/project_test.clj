@@ -16,3 +16,11 @@
                           (str))
           result ((prj/execute script-path) {:project-dir path})]
       (is (= 0 (:exit result))))))
+
+(prj/defjob unit-test-job
+  :test (fn [job-context] (assoc job-context :unit-test-job-executed true)))
+
+(deftest define-a-ci-job
+  (testing "execute the jobs test"
+    (let [resulting-job-context (unit-test-job {})]
+      (is (true? (:unit-test-job-executed resulting-job-context))))))

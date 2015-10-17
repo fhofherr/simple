@@ -3,5 +3,12 @@
 
 (defn execute
   [executable]
-  (fn [project-map]
-    (sh (str (:project-dir project-map) "/" executable))))
+  (fn [job-context]
+    (sh (str (:project-dir job-context) "/" executable))))
+
+(defmacro defjob
+  [job-name & {:keys [test]}]
+  `(defn ~job-name
+     [job-context#]
+     (when ~test
+       (~test job-context#))))
