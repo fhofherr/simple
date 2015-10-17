@@ -21,6 +21,10 @@
   :test (fn [job-context] (assoc job-context :unit-test-job-executed true)))
 
 (deftest define-a-ci-job
-  (testing "execute the jobs test"
+
+  (testing "ci jobs have :ci-job? in their meta data"
+    (is (:ci-job? (meta #'unit-test-job))))
+
+  (testing "ci jobs are functions of a job-context"
     (let [resulting-job-context (unit-test-job {})]
       (is (true? (:unit-test-job-executed resulting-job-context))))))

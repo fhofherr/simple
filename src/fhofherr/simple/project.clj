@@ -8,7 +8,7 @@
 
 (defmacro defjob
   [job-name & {:keys [test]}]
-  `(defn ~job-name
+  `(defn ~(vary-meta job-name assoc :ci-job? true)
      [job-context#]
      (when ~test
        (~test job-context#))))
