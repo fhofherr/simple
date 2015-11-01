@@ -77,4 +77,4 @@
 
   (testing "finds ci jobs in the given namespace"
     (let [found-jobs (engine/find-ci-jobs (find-ns 'fhofherr.simple.test.engine-test))]
-      (is (= #{#'first-job #'second-job} found-jobs)))))
+      (is (= #{#'first-job #'second-job} (set found-jobs))))))

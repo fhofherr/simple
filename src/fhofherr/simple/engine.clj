@@ -72,10 +72,9 @@
 (defn find-ci-jobs
   "Find Simple CI jobs in the `cidef-ns` namespace. All mappings with
   a truthy value for the key `:ci-job?` in their meta data are treated as
-  Simple CI jobs. Returns all found Simple CI jobs as a set."
+  Simple CI jobs. Returns all found Simple CI jobs as a lazy sequence."
   [cidef-ns]
   (->> cidef-ns
        (ns-publics)
        (map second)
-       (filter #(:ci-job? (meta (var-get %))))
-       (set)))
+       (filter #(:ci-job? (meta (var-get %))))))
