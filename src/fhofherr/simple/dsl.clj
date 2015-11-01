@@ -1,4 +1,4 @@
-(ns fhofherr.simple.project
+(ns fhofherr.simple.dsl
   "Functions and macros required to define a Simple CI project in a `simple.clj`
   project definition file. All public functions in this namespace are available
   from within the `simple.clj` project definition file."

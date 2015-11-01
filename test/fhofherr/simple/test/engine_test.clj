@@ -1,12 +1,12 @@
 (ns fhofherr.simple.test.engine-test
   (:require [clojure.test :refer :all]
-            [fhofherr.simple.project :as prj]
+            [fhofherr.simple.dsl :as dsl]
             [fhofherr.simple.engine :as engine]))
 
-(prj/defjob first-job
+(dsl/defjob first-job
   :test (fn [job-context] (assoc job-context :first-job-executed true)))
 
-(prj/defjob second-job
+(dsl/defjob second-job
   :test (fn [job-context] (assoc job-context :second-job-executed true)))
 
 (deftest find-ci-jobs

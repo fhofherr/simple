@@ -1,7 +1,6 @@
 (ns fhofherr.simple.main
   (:require [clojure.java.io :as io]
-            [fhofherr.simple.engine :as engine]
-            [fhofherr.simple.project :as prj])
+            [fhofherr.simple.engine :as engine])
   (:gen-class))
 
 (defn- load-simple-clj

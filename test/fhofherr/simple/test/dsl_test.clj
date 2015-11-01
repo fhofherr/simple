@@ -1,7 +1,7 @@
-(ns fhofherr.simple.test.project-test
+(ns fhofherr.simple.test.dsl-test
   (:require [clojure.test :refer :all]
             [fhofherr.clj-io.files :as files]
-            [fhofherr.simple.project :as prj]))
+            [fhofherr.simple.dsl :as dsl]))
 
 (deftest execute-a-shell-script
   (files/with-tmp-dir
@@ -11,10 +11,10 @@
                           (files/chmod "rwx")
                           (.getFileName)
                           (str))
-          result ((prj/execute script-path) {:project-dir path})]
+          result ((dsl/execute script-path) {:project-dir path})]
       (is (= 0 (:exit result))))))
 
-(prj/defjob unit-test-job
+(dsl/defjob unit-test-job
   :test (fn [job-context] (assoc job-context :unit-test-job-executed true)))
 
 (deftest define-a-ci-job
