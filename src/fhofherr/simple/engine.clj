@@ -61,7 +61,6 @@
                  (apply-step after true)))]
     (with-meta job {:ci-job? true})))
 
-
 (defn load-config
   "Load the Simple CI configuration file located under the given `path`.
   Returns the namespace into which the configration was loaded."
@@ -72,6 +71,7 @@
     (load-file path))
   (find-ns config-ns-name))
 
+; TODO: rename to `find-job-vars`?
 (defn find-ci-jobs
   "Find Simple CI jobs in the `cidef-ns` namespace. All mappings with
   a truthy value for the key `:ci-job?` in their meta data are treated as
@@ -82,3 +82,50 @@
        (ns-publics)
        (map second)
        (filter #(:ci-job? (meta (var-get %))))))
+
+(defn make-job-descriptor
+  "Create a new job descriptor for the `job-var`. The returned job descriptor
+  has the following keys:
+
+  * `:job-var`: the `job-var` passed into the function.
+  * `:job-fn`: the function the `job-var` points to.
+  * `:executions`: a ref containing a vector of all known job executions.
+    The oldest execution comes first in the vector. The youngest execution
+    comes last. See [[make-job-execution]] for details about job executions.
+    Initially empty.
+  * `:executor`: an agent that asynchronously executes the job. The agent's
+    value is the id of the last executed job execution and can be used to
+    retrieve the execution from the `:executions` vector. See
+    [[schedule-job-execution]] for details about executing jobs. Initially set
+    to -1.
+
+  Using an agent as `:executor` ensures that at each point in time only one
+  instance of the job represented by this job descriptor can be executed."
+  [job-var]
+  {:pre [(simple-ci-job? (var-get job-var))]}
+  {:job-var job-var
+   :job-fn (var-get job-var)
+   :executions (ref [] :validator vector?)
+   :executor (agent -1)})
+
+(defn make-job-execution
+  "Creates a new execution for the job represented by `job-descriptor` and
+  appends it to the job descriptors `:executions` vector. Uses `ctx` as the
+  job execution's initial context.
+
+  Returns a tuple `[job-descriptor execution-id]`, where `execution-id` is the
+  job executions's id with respect to the job descriptor's `:executions`
+  vector. `job-descriptor` is the otherwise unchanged job descriptor passed
+  into the function.
+
+  TODO: implement me."
+  [job-descriptor ctx])
+
+(defn schedule-job-execution
+  "Schedules the job execution identified by `execution-id` by sending it
+  to the job descriptor's `:executor` using `send-off`.
+
+  Returns the otherwise unchaged `job-descriptor` passed into the function.
+
+  TODO: implement me."
+  [job-descriptor execution-id])

@@ -78,3 +78,12 @@
   (testing "finds ci jobs in the given namespace"
     (let [found-jobs (engine/find-ci-jobs (find-ns 'fhofherr.simple.test.engine-test))]
       (is (= #{#'first-job #'second-job} (set found-jobs))))))
+
+(deftest make-job-descriptor
+
+  (testing "creates a job descriptor for a job var"
+    (let [job-desc (engine/make-job-descriptor #'first-job)]
+      (is (= #'first-job (:job-var job-desc)))
+      (is (= first-job (:job-fn job-desc)))
+      (is (= [] @(:executions job-desc)))
+      (is (= -1 @(:executor job-desc))))))
