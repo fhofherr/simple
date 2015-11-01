@@ -1,6 +1,16 @@
 (ns fhofherr.simple.engine
   "FIXME: Add documentation.")
 
+(def config-ns-name 'fhofherr.simple.projectdef)
+
+(defn load-config
+  [path]
+  (when (find-ns config-ns-name)
+    (remove-ns config-ns-name))
+  (binding [*ns* (find-ns 'fhofherr.simple.dsl)]
+    (load-file path))
+  (find-ns config-ns-name))
+
 (defn initial-context
   "Initial context of a job execution."
   [project-dir]
@@ -60,11 +70,11 @@
     (with-meta job {:ci-job? true})))
 
 (defn find-ci-jobs
-  "Find Simple CI jobs in the `projectdef-ns` namespace. All mappings with
+  "Find Simple CI jobs in the `cidef-ns` namespace. All mappings with
   a truthy value for the key `:ci-job?` in their meta data are treated as
   Simple CI jobs. Returns all found Simple CI jobs as a set."
-  [projectdef-ns]
-  (->> projectdef-ns
+  [cidef-ns]
+  (->> cidef-ns
        (ns-publics)
        (map second)
        (filter #(:ci-job? (meta (var-get %))))

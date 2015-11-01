@@ -1,5 +1,4 @@
-(ns fhofherr.simple.projectdef
-  (:require [fhofherr.simple.dsl :refer :all]))
+(defci)
 
 (defjob run-tests
   :test (execute "run_tests.sh"))
