@@ -16,7 +16,7 @@
   Test commands are functions that expect a `job-context` map as their only
   argument.
 
-  Just a test commands Simple CI jobs themselfes are functions. They too expect
+  Just as test commands Simple CI jobs themselfes are functions. They too expect
   a `job-context` as their only argument which they pass on to their test
   command.
 
