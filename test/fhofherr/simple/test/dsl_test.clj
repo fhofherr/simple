@@ -1,7 +1,8 @@
 (ns fhofherr.simple.test.dsl-test
   (:require [clojure.test :refer :all]
             [fhofherr.clj-io.files :as files]
-            [fhofherr.simple.dsl :as dsl]))
+            [fhofherr.simple.dsl :as dsl]
+            [fhofherr.simple.engine :as engine]))
 
 (deftest execute-a-shell-script
   (files/with-tmp-dir
@@ -17,11 +18,7 @@
 (dsl/defjob unit-test-job
   :test (fn [job-context] (assoc job-context :unit-test-job-executed true)))
 
-(deftest define-a-ci-job
+(deftest define-a-ci-job 
 
-  (testing "ci jobs have :ci-job? in their meta data"
-    (is (:ci-job? (meta #'unit-test-job))))
-
-  (testing "ci jobs are functions of a job-context"
-    (let [resulting-job-context (unit-test-job {})]
-      (is (true? (:unit-test-job-executed resulting-job-context))))))
+  (testing "defines a Simple CI job"
+    (is (engine/simple-ci-job? unit-test-job))))
