@@ -3,14 +3,6 @@
 
 (def config-ns-name 'fhofherr.simple.projectdef)
 
-(defn load-config
-  [path]
-  (when (find-ns config-ns-name)
-    (remove-ns config-ns-name))
-  (binding [*ns* (find-ns 'fhofherr.simple.dsl)]
-    (load-file path))
-  (find-ns config-ns-name))
-
 (defn initial-context
   "Initial context of a job execution."
   [project-dir]
@@ -68,6 +60,17 @@
                  (apply-step test false)
                  (apply-step after true)))]
     (with-meta job {:ci-job? true})))
+
+
+(defn load-config
+  "Load the Simple CI configuration file located under the given `path`.
+  Returns the namespace into which the configration was loaded."
+  [path]
+  (when (find-ns config-ns-name)
+    (remove-ns config-ns-name))
+  (binding [*ns* (find-ns 'fhofherr.simple.dsl)]
+    (load-file path))
+  (find-ns config-ns-name))
 
 (defn find-ci-jobs
   "Find Simple CI jobs in the `cidef-ns` namespace. All mappings with
