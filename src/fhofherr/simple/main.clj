@@ -16,7 +16,7 @@
                    (load-simple-clj)
                    (engine/find-ci-jobs)
                    (first))]
-    (if (= 0 (:exit (ci-job {:project-dir project-dir})))
+    (if-not (engine/failed? (ci-job (engine/initial-context project-dir)))
      (println "Tests successful!")
      (println "Tests failed!"))))
 

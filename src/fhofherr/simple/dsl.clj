@@ -21,9 +21,15 @@
 
 (defn execute
   "Create a test command that executes the given executable using
-  `clojure.java.shell/sh`.
-
-  Returns whatever `clojure.java.shell/sh` returns."
+  `clojure.java.shell/sh`. The job is marked as failed if the executable
+  returns an exit code that is different from 0."
   [executable]
-  (fn [job-context]
-    (sh (str (:project-dir job-context) "/" executable))))
+  (fn [ctx]
+    (let [result (sh (str (:project-dir ctx) "/" executable))
+          exit-code (:exit result)]
+      (if (< 0 exit-code)
+        (engine/fail ctx
+                     (format "Executable '%s' returned with exit code %s"
+                             executable
+                             exit-code))
+        ctx))))
