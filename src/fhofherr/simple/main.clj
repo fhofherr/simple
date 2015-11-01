@@ -1,7 +1,6 @@
 (ns fhofherr.simple.main
   (:require [clojure.java.io :as io]
-            [fhofherr.simple.engine :as engine]
-            [fhofherr.simple.project :as prj])
+            [fhofherr.simple.engine :as engine])
   (:gen-class))
 
 (defn- load-simple-clj
@@ -17,7 +16,7 @@
                    (load-simple-clj)
                    (engine/find-ci-jobs)
                    (first))]
-    (if (= 0 (:exit (ci-job {:project-dir project-dir})))
+    (if-not (engine/failed? (ci-job (engine/initial-context project-dir)))
      (println "Tests successful!")
      (println "Tests failed!"))))
 
