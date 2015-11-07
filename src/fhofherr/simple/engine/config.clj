@@ -14,15 +14,16 @@
     (load-file path))
   (find-ns config-ns-name))
 
-; TODO: rename to `find-job-vars`?
 (defn find-ci-jobs
   "Find Simple CI jobs in the `cidef-ns` namespace. All mappings with
   a truthy value for the key `:ci-job?` in their meta data are treated as
-  Simple CI jobs. Returns the private vars of all found Simple CI jobs as a
-  lazy sequence."
+  Simple CI jobs. Returns the public private mappings of the found jobs."
   [cidef-ns]
-  (->> cidef-ns
-       (ns-publics)
-       (map second)
+  (as-> cidef-ns $
+       (ns-publics $)
        ;; TODO use simple-ci-job? here
-       (filter #(jobs/simple-ci-job? (var-get %)))))
+       (filter #(-> %
+                    (second)
+                    (var-get)
+                    (jobs/simple-ci-job?))
+               $)))

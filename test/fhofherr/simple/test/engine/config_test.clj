@@ -10,5 +10,6 @@
   (testing "finds ci jobs in the given namespace"
     (let [found-jobs (config/find-ci-jobs
                        (the-ns 'fhofherr.simple.test.engine.config-test))]
-      (is (= #{#'first-job #'second-job}
+      (is (= #{['first-job #'first-job]
+               ['second-job #'second-job]}
              (set found-jobs))))))
