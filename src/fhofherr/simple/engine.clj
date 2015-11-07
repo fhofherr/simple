@@ -12,14 +12,12 @@
   "Check if the given context `ctx` is marked as failed. Return the reason
   for failure, or `nil` if the context is not failed."
   [ctx]
-  (::fail ctx))
+  (= :failed (:status ctx)))
 
 (defn fail
-  "Mark the context `ctx` as failed. And set `reason` as the reason for
-  failure."
-  [ctx reason]
-  {:pre [(string? reason)]}
-  (assoc ctx ::fail reason))
+  "Mark the context `ctx` as failed."
+  [ctx]
+  (assoc ctx :status :failed))
 
 (defn simple-ci-job?
   "Check if the given object is a Simple CI job."
@@ -108,20 +106,26 @@
    :executions (ref [] :validator vector?)
    :executor (agent -1)})
 
-(defn make-job-execution
+(defn make-job-execution!
   "Creates a new execution for the job represented by `job-descriptor` and
   appends it to the job descriptors `:executions` vector. Uses `ctx` as the
   job execution's initial context.
 
-  Returns a tuple `[job-descriptor execution-id]`, where `execution-id` is the
-  job executions's id with respect to the job descriptor's `:executions`
-  vector. `job-descriptor` is the otherwise unchanged job descriptor passed
-  into the function.
+  Returns the execution id of the job executions with respect to the job
+  descriptor's `:executions` vector.
 
-  TODO: implement me."
-  [job-descriptor ctx])
+  The newly created job execution will have its `:context`'s `:status` set to
+  `:queued`."
+  [job-descriptor ctx]
+  (let [exec {:context (assoc ctx :status :queued)}
+        exec-id (dosync
+                  (as-> (:executions job-descriptor) $
+                    (alter $ conj exec)
+                    (count $)
+                    (- $ 1)))]
+    exec-id))
 
-(defn schedule-job-execution
+(defn schedule-job-execution!
   "Schedules the job execution identified by `execution-id` by sending it
   to the job descriptor's `:executor` using `send-off`.
 

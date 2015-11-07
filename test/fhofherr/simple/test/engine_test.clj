@@ -13,7 +13,7 @@
     (is (not (engine/failed? (engine/initial-context ".")))))
 
   (testing "the context can be marked as failed"
-    (is (engine/failed? (engine/fail (engine/initial-context ".") "Failed")))))
+    (is (engine/failed? (engine/fail (engine/initial-context "."))))))
 
 (defn- register-execution
   [marker]
@@ -41,7 +41,7 @@
   (testing "the `:test` is not executed if `:before` fails the job"
     (let [job (engine/make-job {:before (comp
                                           (register-execution :before)
-                                          #(engine/fail % "Before fails the job"))
+                                          #(engine/fail %))
                                 :test (register-execution :test)})
           new-ctx (job (engine/initial-context "."))]
       (is (= [:before] (get-in new-ctx [:payload :executions])))))
@@ -55,7 +55,7 @@
   (testing "`:after` is executed even upon failure"
     (let [job (engine/make-job {:before (comp
                                           (register-execution :before)
-                                          #(engine/fail % "Before fails the job"))
+                                          #(engine/fail %))
                                 :test (register-execution :test)
                                 :after (register-execution :after)})
           new-ctx (job (engine/initial-context "."))]
@@ -64,7 +64,7 @@
     (let [job (engine/make-job {:before (register-execution :before)
                                 :test (comp
                                         (register-execution :test)
-                                        #(engine/fail % "Test fails the job"))
+                                        #(engine/fail %))
                                 :after (register-execution :after)})
           new-ctx (job (engine/initial-context "."))]
       (is (= [:before :test :after] (get-in new-ctx [:payload :executions]))))))
@@ -87,3 +87,13 @@
       (is (= first-job (:job-fn job-desc)))
       (is (= [] @(:executions job-desc)))
       (is (= -1 @(:executor job-desc))))))
+
+(deftest make-job-execution!
+
+  (testing "create a new job descriptor"
+    (let [project-dir "./path/to/non-existent/dir"
+          job-desc (engine/make-job-descriptor #'first-job)
+          exec-id (engine/make-job-execution! job-desc
+                                              (engine/initial-context project-dir))
+          exec (nth @(:executions job-desc) exec-id)]
+      (is (= :queued (get-in exec [:context :status]))))))
