@@ -242,7 +242,7 @@
 
 (defn execute-job!
   [job-desc exec-id]
-  (letfn [(apply-job-fn [job-fn exec] (job-fn (:context exec)))]
+  (letfn [(apply-job-fn [job-fn exec] (io! (job-fn (:context exec))))]
     (update-job-execution! job-desc exec-id mark-executing)
     (try
       (let [exec (get-job-execution job-desc exec-id)
