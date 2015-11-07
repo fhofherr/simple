@@ -1,23 +1,24 @@
 (ns fhofherr.simple.main
   (:require [clojure.java.io :as io]
-            [fhofherr.simple.engine.jobs :as jobs]
-            [fhofherr.simple.engine.config :as config]
+            [fhofherr.simple.engine :as engine]
             [fhofherr.simple.engine.status-model :as sm])
   (:gen-class))
 
-(defn run
+(defn start-simple-ci
   [project-dir]
   {:pre [(not-empty project-dir)
          (.isDirectory (io/as-file project-dir))]}
-  (let [ci-job (-> (str project-dir "/simple.clj")
-                   (config/load-config)
-                   (config/find-ci-jobs)
-                   (first)
-                   (jobs/make-job-descriptor))
-        exec-id (jobs/schedule-job! ci-job
-                                      (jobs/initial-context project-dir))]
-    (await-for 60000 (:executor ci-job))
-    (if-not (sm/failed? ci-job)
+  (engine/load-engine project-dir "simple.clj"))
+
+(defn run
+  [project-dir]
+  (let [engine (start-simple-ci project-dir)
+        ci-job (->> engine
+                   (:jobs)
+                   (first))
+        exec-id (engine/start-job! engine (first ci-job))]
+    (await-for 60000 (:executor (second ci-job)))
+    (if-not (sm/failed? (second ci-job))
       (println "Tests successful!")
       (println "Tests failed!"))))
 

@@ -1,2 +1,26 @@
 (ns fhofherr.simple.engine
-  "FIXME: Add documentation.")
+  (:require [fhofherr.simple.dsl] ; Required to pass it to load-config
+            [fhofherr.simple.engine [config :as config]
+                                    [jobs :as jobs]]))
+
+(defn load-engine
+  [project-dir config-file]
+  (let [js (as-> (str project-dir "/" config-file) $
+             (config/load-config (the-ns 'fhofherr.simple.dsl) $)
+             (config/find-ci-jobs $)
+             (map (fn [[s v]] [(name s) (jobs/make-job-descriptor v)]) $)
+             (into {} $))]
+    {:jobs js
+     :project-dir project-dir}))
+
+(defn has-job?
+  [engine job-name]
+  (contains? (:jobs engine) (name job-name)))
+
+(defn start-job!
+  [engine job-name]
+  (if-let [jd (get-in engine [:jobs (name job-name)])]
+    (as-> engine $
+        (:project-dir $)
+        (jobs/initial-context $)
+        (jobs/schedule-job! jd $))))

@@ -6,11 +6,11 @@
 (defn load-config
   "Load the Simple CI configuration file located under the given `path`.
   Returns the namespace into which the configration was loaded."
-  [path]
+  [dsl-ns path]
   (when (find-ns config-ns-name)
     (remove-ns config-ns-name))
   ;; TODO don't hard code dsl namespace
-  (binding [*ns* (find-ns 'fhofherr.simple.dsl)]
+  (binding [*ns* dsl-ns]
     (load-file path))
   (find-ns config-ns-name))
 
@@ -21,7 +21,7 @@
   [cidef-ns]
   (as-> cidef-ns $
        (ns-publics $)
-       ;; TODO use simple-ci-job? here
+       ;; TODO pass simple-ci-job? as param ==> no dependency to jobs
        (filter #(-> %
                     (second)
                     (var-get)
