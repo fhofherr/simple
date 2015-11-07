@@ -154,20 +154,31 @@
       (map->JobDescriptor)))
 
 (defn get-job-execution
+  "Obtain the job execution with id `exec-id` from the job descriptor
+  `job-desc`. Return `nil` if no execution with `exec-id` exists."
   [job-desc exec-id]
   (get @(:executions job-desc) exec-id))
 
 (defn get-last-execution
+  "Obtain the last executed job execution from `job-desc`. Return `nil`
+  if no job has been executed yet."
   [job-desc]
   (get-job-execution job-desc @(:executor job-desc)))
 
-(defn query-last-execution
+(defn- apply-to-last-execution
+  "Apply the function `f` to the last job execution of `job-desc`. Return
+  whatever `f` returns. If `job-desc` has no executions and `else` is given
+  return `else`. If `else` is not given and there are no job executions for
+  `job-desc` return `nil`."
   [job-desc f & [else]]
   (if-let [last-exec (get-last-execution job-desc)]
     (f last-exec)
     else))
 
-(defn- query-new-executions
+(defn- apply-to-new-executions
+  "Apply the function `f` to a vector of all of `job-desc`'s job executions
+  whose id is higher than the id of the last executed job execution. The vector
+  passed to `f` may be empty."
   [job-desc f]
   (let [execs @(:executions job-desc)
         start-id @(:executor job-desc)]
@@ -179,19 +190,19 @@
   StatusModel
   (created? [this] (and (empty? @(:executions this))
                         (< @(:executor this) 0)))
-  (queued? [this] (query-new-executions this #(some queued? %)))
-  (executing? [this] (query-new-executions this #(some executing? %)))
-  (successful? [this] (query-last-execution this successful?))
-  (failed? [this] (query-last-execution this failed?)))
+  (queued? [this] (apply-to-new-executions this #(some queued? %)))
+  (executing? [this] (apply-to-new-executions this #(some executing? %)))
+  (successful? [this] (apply-to-last-execution this successful?))
+  (failed? [this] (apply-to-last-execution this failed?)))
 
-(defn update-job-execution!
+(defn- update-job-execution!
   [job-desc exec-id f & args]
   (dosync
     (as-> (:executions job-desc) execs
       (alter execs update-in [exec-id] #(apply f % args))))
   job-desc)
 
-(defn update-context!
+(defn- update-context!
   [job-desc exec-id f & args]
   (update-job-execution! job-desc exec-id #(as-> (:context %) $
                                              (apply f $ args))))
@@ -241,6 +252,8 @@
     [exec-id exec]))
 
 (defn execute-job!
+  "Synchronously execute the job execution with id `exec-id`. See
+  [[schedule-job!]] for asynchronous job execution. "
   [job-desc exec-id]
   (letfn [(apply-job-fn [job-fn exec] (io! (job-fn (:context exec))))]
     (update-job-execution! job-desc exec-id mark-executing)
