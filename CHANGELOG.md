@@ -25,4 +25,9 @@ to [Semantic Versioning](http://semver.org/).
   a `:before` hook fails the tests will not be executed. The `:after`
   hooks are executed even if `:test` or `:before` fail.
 
+* Implemented asynchronous job execution using an agent. The agent
+  ensures that at most one instance of a job is executed at any given
+  point in time. Instances of different jobs may be executed in
+  parallel.
+
 [unreleased]: https://github.com/fhofherr/simple/compare/0.1.0...HEAD
