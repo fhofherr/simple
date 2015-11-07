@@ -10,10 +10,14 @@
   (let [ci-job (-> (str project-dir "/simple.clj")
                    (engine/load-config)
                    (engine/find-ci-jobs)
-                   (first))]
-    (if-not (engine/failed? (ci-job (engine/initial-context project-dir)))
-     (println "Tests successful!")
-     (println "Tests failed!"))))
+                   (first)
+                   (engine/make-job-descriptor))
+        exec-id (engine/schedule-job! ci-job
+                                      (engine/initial-context project-dir))]
+    (await-for 60000 (:executor ci-job))
+    (if-not (engine/failed? ci-job)
+      (println "Tests successful!")
+      (println "Tests failed!"))))
 
 (defn -main
   [& args]
