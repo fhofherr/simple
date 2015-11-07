@@ -7,6 +7,7 @@
         :url "https://github.com/fhofherr/simple"}
   :dependencies [[org.clojure/clojure "1.7.0"]]
   :main ^:skip-aot fhofherr.simple.main
+  :global-vars {*warn-on-reflection* true}
   :target-path "target/%s"
   :test-selectors {:unit (complement :integration)
                    :integration :integration}
