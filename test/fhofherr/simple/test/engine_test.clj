@@ -14,7 +14,7 @@
     (is (not (engine/failed? (engine/initial-context ".")))))
 
   (testing "the context can be marked as failed"
-    (is (engine/failed? (engine/fail (engine/initial-context "."))))))
+    (is (engine/failed? (engine/mark-failed (engine/initial-context "."))))))
 
 (defn- register-execution
   [marker]
@@ -42,7 +42,7 @@
   (testing "the `:test` is not executed if `:before` fails the job"
     (let [job (engine/make-job {:before (comp
                                           (register-execution :before)
-                                          #(engine/fail %))
+                                          #(engine/mark-failed %))
                                 :test (register-execution :test)})
           new-ctx (job (engine/initial-context "."))]
       (is (= [:before] (get-in new-ctx [:payload :executions])))))
@@ -56,7 +56,7 @@
   (testing "`:after` is executed even upon failure"
     (let [job (engine/make-job {:before (comp
                                           (register-execution :before)
-                                          #(engine/fail %))
+                                          #(engine/mark-failed %))
                                 :test (register-execution :test)
                                 :after (register-execution :after)})
           new-ctx (job (engine/initial-context "."))]
@@ -65,7 +65,7 @@
     (let [job (engine/make-job {:before (register-execution :before)
                                 :test (comp
                                         (register-execution :test)
-                                        #(engine/fail %))
+                                        #(engine/mark-failed %))
                                 :after (register-execution :after)})
           new-ctx (job (engine/initial-context "."))]
       (is (= [:before :test :after] (get-in new-ctx [:payload :executions]))))))
@@ -93,7 +93,12 @@
       (is (= #'first-job (:job-var job-desc)))
       (is (= first-job (:job-fn job-desc)))
       (is (= [] @(:executions job-desc)))
-      (is (= -1 @(:executor job-desc))))))
+      (is (= -1 @(:executor job-desc)))
+      (is (engine/created? job-desc))
+      (is (not (engine/queued? job-desc)))
+      (is (not (engine/executing? job-desc)))
+      (is (not (engine/successful? job-desc)))
+      (is (not (engine/failed? job-desc))))))
 
 (deftest make-job-execution!
 
@@ -118,12 +123,11 @@
         (engine/schedule-job-execution! job-desc exec-id-2)
 
         (Thread/sleep 100)
-        (is (= :executing (-> (engine/get-job-execution job-desc exec-id-1)
-                              (engine/job-execution-status))))
-        (is (= :queued (-> (engine/get-job-execution job-desc exec-id-2)
-                           (engine/job-execution-status))))
+        (is (engine/executing? (engine/get-job-execution job-desc exec-id-1)))
+        (is (engine/executing? job-desc))
+        (is (engine/queued? (engine/get-job-execution job-desc exec-id-2)))
+        (is (engine/queued? job-desc))
 
         (.countDown @waiting-job-latch)
         (Thread/sleep 100)
-        (is (= :successful (-> (engine/get-last-executed job-desc)
-                               (engine/job-execution-status))))))))
+        (is (engine/successful? job-desc))))))

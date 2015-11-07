@@ -57,5 +57,5 @@
     (let [result (sh (str (:project-dir ctx) "/" executable))
           exit-code (:exit result)]
       (if (< 0 exit-code)
-        (engine/fail ctx)
+        (engine/mark-failed ctx)
         ctx))))
