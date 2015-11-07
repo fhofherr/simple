@@ -70,28 +70,36 @@
           new-ctx (job (engine/initial-context "."))]
       (is (= [:before :test :after] (get-in new-ctx [:payload :executions]))))))
 
-(def first-job (engine/make-job {:test identity}))
+(def successful-job (engine/make-job {:test engine/mark-successful}))
 
-(def second-job (engine/make-job {:test identity}))
+(def failing-job (engine/make-job {:test engine/mark-failed}))
 
 (def waiting-job-latch (atom (CountDownLatch. 1)))
 (def waiting-job (engine/make-job {:test (fn [ctx]
                                            {:pre [@waiting-job-latch]}
                                            (.await @waiting-job-latch)
-                                           (assoc ctx :status :successful))}))
+                                           (engine/mark-successful ctx))}))
+
+
+(def throwing-job (engine/make-job {:test (fn [ctx]
+                                            (throw (Throwable. "Kaboom, Baby!")))}))
 
 (deftest find-ci-jobs
 
   (testing "finds ci jobs in the given namespace"
     (let [found-jobs (engine/find-ci-jobs (find-ns 'fhofherr.simple.test.engine-test))]
-      (is (= #{#'first-job #'second-job #'waiting-job} (set found-jobs))))))
+      (is (= #{#'successful-job
+               #'failing-job
+               #'waiting-job
+               #'throwing-job}
+             (set found-jobs))))))
 
 (deftest make-job-descriptor
 
   (testing "creates a job descriptor for a job var"
-    (let [job-desc (engine/make-job-descriptor #'first-job)]
-      (is (= #'first-job (:job-var job-desc)))
-      (is (= first-job (:job-fn job-desc)))
+    (let [job-desc (engine/make-job-descriptor #'successful-job)]
+      (is (= #'successful-job (:job-var job-desc)))
+      (is (= successful-job (:job-fn job-desc)))
       (is (= [] @(:executions job-desc)))
       (is (= -1 @(:executor job-desc)))
       (is (engine/created? job-desc))
@@ -104,30 +112,51 @@
 
   (testing "create a new job descriptor"
     (let [prj-dir "./path/to/non-existent/dir"
-          job-desc (engine/make-job-descriptor #'first-job)
+          job-desc (engine/make-job-descriptor #'successful-job)
           [exec-id exec] (engine/make-job-execution! job-desc
                                               (engine/initial-context prj-dir))]
       (is (engine/created? exec)))))
 
-(deftest schedule-job-execution!
+(deftest schedule-jobs
   (let [prj-dir "./path/to/non-existent/dir"
-        job-desc (engine/make-job-descriptor #'waiting-job)]
+        ctx (engine/initial-context prj-dir)]
 
     (testing "set a queued and an executing job's status"
-      (let [[exec-id-1 _] (engine/make-job-execution! job-desc
-                                                      (engine/initial-context prj-dir))
-            [exec-id-2 _] (engine/make-job-execution! job-desc
-                                                      (engine/initial-context prj-dir))]
-        (reset! waiting-job-latch (CountDownLatch. 1))
-        (engine/schedule-job-execution! job-desc exec-id-1)
-        (engine/schedule-job-execution! job-desc exec-id-2)
+      (reset! waiting-job-latch (CountDownLatch. 1))
+
+      (let [job-desc (engine/make-job-descriptor #'waiting-job)
+            exec-id-1 (engine/schedule-job! job-desc ctx)
+            exec-id-2 (engine/schedule-job! job-desc ctx)]
 
         (Thread/sleep 100)
+        ;; The first execution is executing; the second execution is queued.
         (is (engine/executing? (engine/get-job-execution job-desc exec-id-1)))
-        (is (engine/executing? job-desc))
         (is (engine/queued? (engine/get-job-execution job-desc exec-id-2)))
+
+        ;; The job descriptor has an executing and a queued execution and is
+        ;; thus executing and queued at the same time.
+        (is (engine/executing? job-desc))
         (is (engine/queued? job-desc))
 
         (.countDown @waiting-job-latch)
-        (Thread/sleep 100)
-        (is (engine/successful? job-desc))))))
+        (await-for 5000 (:executor job-desc))
+
+        ;; After the completion of both executions the individual executions,
+        ;; as well as the job-descriptor are marked as successful.
+        (is (engine/successful? (engine/get-job-execution job-desc exec-id-1)))
+        (is (engine/successful? (engine/get-job-execution job-desc exec-id-2)))
+        (is (engine/successful? job-desc))))
+
+    (testing "mark execution and descriptor as failed if the job fails"
+      (let [job-desc (engine/make-job-descriptor #'failing-job)
+            exec-id (engine/schedule-job! job-desc ctx)]
+        (await-for 5000 (:executor job-desc))
+        (is (engine/failed? (engine/get-job-execution job-desc exec-id)))
+        (is (engine/failed? job-desc))))
+
+    (testing "mark execution and descriptor as failed if the job throws"
+      (let [job-desc (engine/make-job-descriptor #'throwing-job)
+            exec-id (engine/schedule-job! job-desc ctx)]
+        (await-for 5000 (:executor job-desc))
+        (is (engine/failed? (engine/get-job-execution job-desc exec-id)))
+        (is (engine/failed? job-desc))))))

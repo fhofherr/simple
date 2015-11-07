@@ -252,7 +252,7 @@
             new-ctx (apply-job-fn (:job-fn job-desc) exec)]
         ;; Ignore the old context and return the new-ctx.
         (update-context! job-desc exec-id (fn [_] new-ctx)))
-      (catch Exception e
+      (catch Throwable t
         (update-job-execution! job-desc exec-id mark-failed)))))
 
 (defn schedule-job-execution!
@@ -267,6 +267,17 @@
             exec-id)]
     (dosync
       (update-job-execution! job-desc exec-id mark-queued)
-      ;; TODO failed agents
+      ;; execute-job! catches any Throwable thrown by the job and does not
+      ;; rethrow it. The executor should thus never fail under normal
+      ;; conditions.
       (send-off (:executor job-desc) do-execute))
     job-desc))
+
+(defn schedule-job!
+  "Create a new job execution using [[make-job-execution!]] and immediately
+  schedule it using [[schedule-job-execution!]]. Return the job execution's
+  id."
+  [job-desc initial-ctx]
+  (let [[exec-id _] (make-job-execution! job-desc initial-ctx)]
+    (schedule-job-execution! job-desc exec-id)
+    exec-id))
