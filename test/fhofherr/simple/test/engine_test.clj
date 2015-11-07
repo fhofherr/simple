@@ -107,7 +107,7 @@
           job-desc (engine/make-job-descriptor #'first-job)
           [exec-id exec] (engine/make-job-execution! job-desc
                                               (engine/initial-context prj-dir))]
-      (is (= :created (engine/job-execution-status exec))))))
+      (is (engine/created? exec)))))
 
 (deftest schedule-job-execution!
   (let [prj-dir "./path/to/non-existent/dir"

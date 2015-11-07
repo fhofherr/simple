@@ -191,6 +191,11 @@
       (alter execs update-in [exec-id] #(apply f % args))))
   job-desc)
 
+(defn update-context!
+  [job-desc exec-id f & args]
+  (update-job-execution! job-desc exec-id #(as-> (:context %) $
+                                             (apply f $ args))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; Scheduling
@@ -235,20 +240,18 @@
                     (- $ 1)))]
     [exec-id exec]))
 
-;; deprecate?
-(defn job-execution-status
-  [exec]
-  (get-in exec [:context :status]))
-
 (defn execute-job!
   [job-desc exec-id]
   (letfn [(apply-job-fn [job-fn exec] (job-fn (:context exec)))]
     (update-job-execution! job-desc exec-id mark-executing)
     (try
       (let [exec (get-job-execution job-desc exec-id)
+            ;; Do not apply the job fn within a transaction (e.g. by using
+            ;; update-context!). This would re-execute the tests if commiting
+            ;; the transaction fails.
             new-ctx (apply-job-fn (:job-fn job-desc) exec)]
-        ;; TODO update-context fn
-        (update-job-execution! job-desc exec-id #(assoc % :context new-ctx)))
+        ;; Ignore the old context and return the new-ctx.
+        (update-context! job-desc exec-id (fn [_] new-ctx)))
       (catch Exception e
         (update-job-execution! job-desc exec-id mark-failed)))))
 
