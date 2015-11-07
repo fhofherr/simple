@@ -107,29 +107,70 @@
    :executor (agent -1)})
 
 (defn make-job-execution!
-  "Creates a new execution for the job represented by `job-descriptor` and
+  "Creates a new execution for the job represented by `job-desc` and
   appends it to the job descriptors `:executions` vector. Uses `ctx` as the
   job execution's initial context.
 
-  Returns the execution id of the job executions with respect to the job
-  descriptor's `:executions` vector.
+  Returns a tuple `[exec-id exec]` where `exec-id` is the id of the execution
+  with respect to the job descriptor's `:executions` vector and `exec` is
+  the execution itself.
 
   The newly created job execution will have its `:context`'s `:status` set to
-  `:queued`."
-  [job-descriptor ctx]
-  (let [exec {:context (assoc ctx :status :queued)}
+  `:created`."
+  [job-desc ctx]
+  (let [exec {:context (assoc ctx :status :created)}
         exec-id (dosync
-                  (as-> (:executions job-descriptor) $
+                  (as-> (:executions job-desc) $
                     (alter $ conj exec)
                     (count $)
                     (- $ 1)))]
-    exec-id))
+    [exec-id exec]))
+
+(defn get-job-execution
+  [job-desc exec-id]
+  (nth @(:executions job-desc) exec-id))
+
+(defn get-last-executed
+  [job-desc]
+  (get-job-execution job-desc @(:executor job-desc)))
+
+(defn update-job-execution!
+  [job-desc exec-id f & args]
+  (dosync
+    (as-> (:executions job-desc) execs
+      (alter execs update-in [exec-id] #(apply f % args))))
+  job-desc)
+
+(defn job-execution-status
+  [exec]
+  (get-in exec [:context :status]))
+
+(defn execute-job!
+  [job-desc exec-id]
+  (letfn [(mark-failed [exec] (update-in exec [:context] fail))
+          (apply-job-fn [job-fn exec] (job-fn (:context exec)))]
+    (update-job-execution! job-desc exec-id assoc-in [:context :status] :executing)
+    (try
+      (let [exec (get-job-execution job-desc exec-id)
+            new-ctx (apply-job-fn (:job-fn job-desc) exec)]
+        (update-job-execution! job-desc exec-id #(assoc % :context new-ctx)))
+      (catch Exception e
+        (update-job-execution! job-desc exec-id mark-failed)))))
 
 (defn schedule-job-execution!
-  "Schedules the job execution identified by `execution-id` by sending it
+  "Schedules the job execution identified by `exec-id` by sending it
   to the job descriptor's `:executor` using `send-off`.
 
-  Returns the otherwise unchaged `job-descriptor` passed into the function.
-
-  TODO: implement me."
-  [job-descriptor execution-id])
+  Returns the otherwise unchaged `job-desc` passed into the function."
+  [job-desc exec-id]
+  (letfn [(mark-queued [exec]
+            (assoc-in exec [:context :status] :queued))
+          (do-execute [last-exec-id]
+            {:pre [(< last-exec-id exec-id)]}
+            (execute-job! job-desc exec-id)
+            exec-id)]
+    (dosync
+      (update-job-execution! job-desc exec-id mark-queued)
+      ;; TODO failed agents
+      (send-off (:executor job-desc) do-execute))
+    job-desc))

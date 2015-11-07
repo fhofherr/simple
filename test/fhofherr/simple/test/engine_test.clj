@@ -1,7 +1,8 @@
 (ns fhofherr.simple.test.engine-test
   (:require [clojure.test :refer :all]
             [fhofherr.simple.dsl :as dsl]
-            [fhofherr.simple.engine :as engine]))
+            [fhofherr.simple.engine :as engine])
+  (:import [java.util.concurrent CountDownLatch]))
 
 (deftest execution-context
 
@@ -73,11 +74,17 @@
 
 (def second-job (engine/make-job {:test identity}))
 
+(def waiting-job-latch (atom (CountDownLatch. 1)))
+(def waiting-job (engine/make-job {:test (fn [ctx]
+                                           {:pre [@waiting-job-latch]}
+                                           (.await @waiting-job-latch)
+                                           (assoc ctx :status :successful))}))
+
 (deftest find-ci-jobs
 
   (testing "finds ci jobs in the given namespace"
     (let [found-jobs (engine/find-ci-jobs (find-ns 'fhofherr.simple.test.engine-test))]
-      (is (= #{#'first-job #'second-job} (set found-jobs))))))
+      (is (= #{#'first-job #'second-job #'waiting-job} (set found-jobs))))))
 
 (deftest make-job-descriptor
 
@@ -91,9 +98,32 @@
 (deftest make-job-execution!
 
   (testing "create a new job descriptor"
-    (let [project-dir "./path/to/non-existent/dir"
+    (let [prj-dir "./path/to/non-existent/dir"
           job-desc (engine/make-job-descriptor #'first-job)
-          exec-id (engine/make-job-execution! job-desc
-                                              (engine/initial-context project-dir))
-          exec (nth @(:executions job-desc) exec-id)]
-      (is (= :queued (get-in exec [:context :status]))))))
+          [exec-id exec] (engine/make-job-execution! job-desc
+                                              (engine/initial-context prj-dir))]
+      (is (= :created (engine/job-execution-status exec))))))
+
+(deftest schedule-job-execution!
+  (let [prj-dir "./path/to/non-existent/dir"
+        job-desc (engine/make-job-descriptor #'waiting-job)]
+
+    (testing "set a queued and an executing job's status"
+      (let [[exec-id-1 _] (engine/make-job-execution! job-desc
+                                                      (engine/initial-context prj-dir))
+            [exec-id-2 _] (engine/make-job-execution! job-desc
+                                                      (engine/initial-context prj-dir))]
+        (reset! waiting-job-latch (CountDownLatch. 1))
+        (engine/schedule-job-execution! job-desc exec-id-1)
+        (engine/schedule-job-execution! job-desc exec-id-2)
+
+        (Thread/sleep 100)
+        (is (= :executing (-> (engine/get-job-execution job-desc exec-id-1)
+                              (engine/job-execution-status))))
+        (is (= :queued (-> (engine/get-job-execution job-desc exec-id-2)
+                           (engine/job-execution-status))))
+
+        (.countDown @waiting-job-latch)
+        (Thread/sleep 100)
+        (is (= :successful (-> (engine/get-last-executed job-desc)
+                               (engine/job-execution-status))))))))
