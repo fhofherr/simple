@@ -1,5 +1,6 @@
 (ns fhofherr.simple.engine.jobs
-  (:require [fhofherr.simple.engine.status-model :as sm]))
+  (:require [clojure.tools.logging :as log]
+            [fhofherr.simple.engine.status-model :as sm]))
 
 (defn simple-ci-job?
   "Check if the given object is a Simple CI job."
@@ -162,6 +163,7 @@
   [[schedule-job!]] for asynchronous job execution. "
   [job-desc exec-id]
   (letfn [(apply-job-fn [job-fn exec] (io! (job-fn (:context exec))))]
+    (log/info "Starting execution" exec-id "of job" (:job-var job-desc))
     (update-job-execution! job-desc exec-id sm/mark-executing)
     (try
       (let [exec (get-job-execution job-desc exec-id)
@@ -171,7 +173,14 @@
             new-ctx (apply-job-fn (:job-fn job-desc) exec)]
         ;; Ignore the old context and return the new-ctx.
         (update-context! job-desc exec-id (fn [_] new-ctx)))
+      (log/info "Finished execution" exec-id "of job" (:job-var job-desc))
       (catch Throwable t
+        (log/warn t
+                  "Exception occured during execution"
+                  exec-id
+                  "of job"
+                  (:job-var job-desc)
+                  "! Marking job as failed.")
         (update-job-execution! job-desc exec-id sm/mark-failed)))))
 
 (defn schedule-job-execution!
@@ -184,6 +193,7 @@
             {:pre [(< last-exec-id exec-id)]}
             (execute-job! job-desc exec-id)
             exec-id)]
+    (log/info "Queueing execution" exec-id "of job" (:job-var job-desc))
     (dosync
       (update-job-execution! job-desc exec-id sm/mark-queued)
       ;; execute-job! catches any Throwable thrown by the job and does not
