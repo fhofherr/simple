@@ -5,7 +5,8 @@
             :url "http://opensource.org/licenses/MIT"}
   :scm {:name "git"
         :url "https://github.com/fhofherr/simple"}
-  :dependencies [[org.clojure/clojure "1.7.0"]]
+  :dependencies [[org.clojure/clojure "1.7.0"]
+                 [org.clojure/tools.logging "0.3.1"]]
   :main ^:skip-aot fhofherr.simple.main
   :global-vars {*warn-on-reflection* true}
   :target-path "target/%s"
