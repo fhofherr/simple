@@ -1,5 +1,6 @@
 (ns fhofherr.simple.engine.config
-  (:require [fhofherr.simple.engine.jobs :as jobs]))
+  (:require [clojure.tools.logging :as log]
+            [fhofherr.simple.engine.jobs :as jobs]))
 
 (def config-ns-name 'fhofherr.simple.projectdef)
 
@@ -8,8 +9,10 @@
   Returns the namespace into which the configration was loaded."
   [dsl-ns path]
   (when (find-ns config-ns-name)
+    (log/info "Removing already existing configuration namespace:"
+              config-ns-name)
     (remove-ns config-ns-name))
-  ;; TODO don't hard code dsl namespace
+  (log/info "Loading configuration file" path)
   (binding [*ns* dsl-ns]
     (load-file path))
   (find-ns config-ns-name))
