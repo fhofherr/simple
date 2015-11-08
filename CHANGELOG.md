@@ -30,4 +30,6 @@ to [Semantic Versioning](http://semver.org/).
   point in time. Instances of different jobs may be executed in
   parallel.
 
+* Simple can execute its own tests via `lein run $PWD`
+
 [unreleased]: https://github.com/fhofherr/simple/compare/0.1.0...HEAD

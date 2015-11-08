@@ -3,7 +3,9 @@
   project definition file. All public functions in this namespace are available
   from within the `simple.clj` project definition file."
   (:require [clojure.java.shell :refer [sh]]
-            [fhofherr.simple.engine :as engine]))
+            [fhofherr.simple.engine.jobs :as jobs]
+            [fhofherr.simple.engine.config :as config]
+            [fhofherr.simple.engine.status-model :as sm]))
 
 (defn- references-to-map
   [references]
@@ -24,14 +26,14 @@
 
 (defmacro defci
   "Configure your Simple CI environment. Defines a namespace whose name is set
-  to [[engine/config-ns-name]]. You can use `:require`, `:import`, and
+  to [[config/config-ns-name]]. You can use `:require`, `:import`, and
   `:refer-clojure` just as you would in a normal namespace."
   [& references]
   (let [new-refs (-> references
                      (references-to-map)
                      (require-dsl)
                      (map-to-references))]
-    `(ns ~engine/config-ns-name
+    `(ns ~config/config-ns-name
        ~@new-refs)))
 
 (defmacro defjob
@@ -43,10 +45,10 @@
     :test test-command)
   ```
 
-  See [[engine/make-job]] for further details about Simple CI jobs."
+  See [[jobs/make-job]] for further details about Simple CI jobs."
   [job-name & {:as jobdef}]
   (let [jobdef# jobdef]
-    `(def ~job-name (engine/make-job ~jobdef#))))
+    `(def ~job-name (jobs/make-job ~jobdef#))))
 
 (defn execute
   "Create a test command that executes the given executable using
@@ -57,5 +59,5 @@
     (let [result (sh (str (:project-dir ctx) "/" executable))
           exit-code (:exit result)]
       (if (< 0 exit-code)
-        (engine/mark-failed ctx)
+        (sm/mark-failed ctx)
         ctx))))
