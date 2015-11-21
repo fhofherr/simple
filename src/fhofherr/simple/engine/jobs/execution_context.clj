@@ -20,21 +20,7 @@
     {:pre [(sm/state-valid? this next-state)]}
     (as-> (sm/current-state this) $
       (get state-transitions $)
-      (contains? $ next-state)))
-
-  sm/StatusModel
-  (created? [this] (= ::created (:state this)))
-  (queued? [this] (= :queued (:state this)))
-  (executing? [this] (= ::executing (:state this)))
-  (successful? [this] (= ::successful (:state this)))
-  (failed? [this] (= ::failed (:state this)))
-
-  sm/ChangeableStatusModel
-  (mark-created [this] (assoc this :state ::created))
-  (mark-queued [this] (assoc this :state :queued))
-  (mark-executing [this] (assoc this :state ::executing))
-  (mark-successful [this] (assoc this :state ::successful))
-  (mark-failed [this] (assoc this :state ::failed)))
+      (contains? $ next-state))))
 
 (defn make-job-execution-context
   "Initial context of a job execution."

@@ -5,7 +5,7 @@
   (:require [clojure.java.shell :refer [sh]]
             [fhofherr.simple.engine.jobs :as jobs]
             [fhofherr.simple.engine.config :as config]
-            [fhofherr.simple.engine.status-model :as sm]))
+            [fhofherr.simple.engine.jobs.execution-context :as ex-ctx]))
 
 (defn- references-to-map
   [references]
@@ -59,5 +59,5 @@
     (let [result (sh (str (:project-dir ctx) "/" executable))
           exit-code (:exit result)]
       (if (< 0 exit-code)
-        (sm/mark-failed ctx)
+        (ex-ctx/mark-failed ctx)
         ctx))))
