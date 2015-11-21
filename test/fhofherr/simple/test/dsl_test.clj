@@ -2,8 +2,8 @@
   (:require [clojure.test :refer :all]
             [fhofherr.clj-io.files :as files]
             [fhofherr.simple.dsl :as dsl]
-            [fhofherr.simple.engine.jobs :as jobs]
-            [fhofherr.simple.engine.jobs.execution-context :as ex-ctx]))
+            [fhofherr.simple.engine.jobs [execution-context :as ex-ctx]
+                                         [job-fn :as job-fn]]))
 
 (defn- copy-script
   [path script-name]
@@ -36,4 +36,4 @@
 (deftest define-a-ci-job
 
   (testing "defines a Simple CI job"
-    (is (jobs/simple-ci-job? unit-test-job))))
+    (is (job-fn/simple-ci-job? unit-test-job))))

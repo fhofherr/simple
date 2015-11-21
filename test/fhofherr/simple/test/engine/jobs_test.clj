@@ -2,85 +2,22 @@
   (:require [clojure.test :refer :all]
             [fhofherr.simple.engine [jobs :as jobs]
                                     [status-model :as sm]]
-            [fhofherr.simple.engine.jobs [execution-context :as ex-ctx]
+            [fhofherr.simple.engine.jobs [job-fn :as job-fn]
+                                         [execution-context :as ex-ctx]
                                          [job-execution :as job-ex]])
   (:import [java.util.concurrent CountDownLatch]))
 
-(defn- register-execution
-  [marker]
-  (fn [ctx]
-    (update-in ctx [:payload :executions] #(conj (or % []) marker))))
+(def successful-job (job-fn/make-job {:test identity}))
 
-(deftest make-job
-
-  (testing "ci jobs have :ci-job? in their meta data"
-    (let [job (jobs/make-job {:test identity})]
-      (is (:ci-job? (meta job)))
-      (is (jobs/simple-ci-job? job))))
-
-  (testing "ci jobs are functions of a job context"
-    (let [job (jobs/make-job {:test (register-execution :job)})
-          new-ctx (job (ex-ctx/make-job-execution-context "."))]
-      (is (= [:job] (get-in new-ctx [:payload :executions])))))
-
-  (testing "ci jobs execute their `:before` function before the `:test`"
-    (let [job (jobs/make-job {:before (register-execution :before)
-                                :test (register-execution :test)})
-          new-ctx (job (ex-ctx/make-job-execution-context "."))]
-      (is (= [:before :test] (get-in new-ctx [:payload :executions])))))
-
-  (testing "the `:test` is not executed if `:before` fails the job"
-    (let [job (jobs/make-job {:before (comp
-                                        (register-execution :before)
-                                        ex-ctx/mark-failed)
-                              :test (register-execution :test)})
-          init-ctx (-> "."
-                       (ex-ctx/make-job-execution-context)
-                       (ex-ctx/mark-executing))
-          new-ctx (job init-ctx)]
-      (is (= [:before] (get-in new-ctx [:payload :executions])))))
-
-  (testing "ci jobs execute their `:after` function after the `:test`"
-    (let [job (jobs/make-job {:test (register-execution :test)
-                                :after (register-execution :after)})
-          new-ctx (job (ex-ctx/make-job-execution-context "."))]
-      (is (= [:test :after] (get-in new-ctx [:payload :executions])))))
-
-  (testing "`:after` is executed even upon failure"
-    (let [job (jobs/make-job {:before (comp
-                                          (register-execution :before)
-                                          ex-ctx/mark-failed)
-                                :test (register-execution :test)
-                                :after (register-execution :after)})
-          init-ctx (-> "."
-                       (ex-ctx/make-job-execution-context)
-                       (ex-ctx/mark-executing))
-          new-ctx (job init-ctx)]
-      (is (= [:before :after] (get-in new-ctx [:payload :executions]))))
-
-    (let [job (jobs/make-job {:before (register-execution :before)
-                                :test (comp
-                                        (register-execution :test)
-                                        ex-ctx/mark-failed)
-                                :after (register-execution :after)})
-
-          init-ctx (-> "."
-                       (ex-ctx/make-job-execution-context)
-                       (ex-ctx/mark-executing))
-          new-ctx (job init-ctx)]
-      (is (= [:before :test :after] (get-in new-ctx [:payload :executions]))))))
-
-(def successful-job (jobs/make-job {:test identity}))
-
-(def failing-job (jobs/make-job {:test ex-ctx/mark-failed}))
+(def failing-job (job-fn/make-job {:test ex-ctx/mark-failed}))
 
 (def waiting-job-latch (atom (CountDownLatch. 1)))
-(def waiting-job (jobs/make-job {:test (fn [ctx]
+(def waiting-job (job-fn/make-job {:test (fn [ctx]
                                            {:pre [@waiting-job-latch]}
                                            (.await @waiting-job-latch)
                                            ctx)}))
 
-(def throwing-job (jobs/make-job {:test (fn [ctx]
+(def throwing-job (job-fn/make-job {:test (fn [ctx]
                                             (throw (Throwable. "Kaboom, Baby!")))}))
 
 (deftest make-job-descriptor

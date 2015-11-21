@@ -1,10 +1,10 @@
 (ns fhofherr.simple.test.engine.config-test
   (:require [clojure.test :refer :all]
-            [fhofherr.simple.engine [config :as config]
-                                    [jobs :as jobs]]))
+            [fhofherr.simple.engine [config :as config]]
+            [fhofherr.simple.engine.jobs [job-fn :as job-fn]]))
 
-(def first-job (jobs/make-job {:test identity}))
-(def second-job (jobs/make-job {:test identity}))
+(def first-job (job-fn/make-job {:test identity}))
+(def second-job (job-fn/make-job {:test identity}))
 
 (deftest find-ci-jobs
   (testing "finds ci jobs in the given namespace"

@@ -5,7 +5,8 @@
   (:require [clojure.java.shell :refer [sh]]
             [fhofherr.simple.engine.jobs :as jobs]
             [fhofherr.simple.engine.config :as config]
-            [fhofherr.simple.engine.jobs.execution-context :as ex-ctx]))
+            [fhofherr.simple.engine.jobs [execution-context :as ex-ctx]
+                                         [job-fn :as job-fn]]))
 
 (defn- references-to-map
   [references]
@@ -45,10 +46,10 @@
     :test test-command)
   ```
 
-  See [[jobs/make-job]] for further details about Simple CI jobs."
+  See [[job-fn/make-job]] for further details about Simple CI jobs."
   [job-name & {:as jobdef}]
   (let [jobdef# jobdef]
-    `(def ~job-name (jobs/make-job ~jobdef#))))
+    `(def ~job-name (job-fn/make-job ~jobdef#))))
 
 (defn execute
   "Create a test command that executes the given executable using
