@@ -24,9 +24,9 @@
   [cidef-ns]
   (as-> cidef-ns $
        (ns-publics $)
-       ;; TODO pass simple-ci-job? as param ==> no dependency to job-fn
+       ;; TODO pass job-fn? as param ==> no dependency to job-fn
        (filter #(-> %
                     (second)
                     (var-get)
-                    (job-fn/simple-ci-job?))
+                    (job-fn/job-fn?))
                $)))

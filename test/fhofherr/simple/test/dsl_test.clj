@@ -36,4 +36,4 @@
 (deftest define-a-ci-job
 
   (testing "defines a Simple CI job"
-    (is (job-fn/simple-ci-job? unit-test-job))))
+    (is (job-fn/job-fn? unit-test-job))))

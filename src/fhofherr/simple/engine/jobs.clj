@@ -25,7 +25,7 @@
   Using an agent as `:executor` ensures that at each point in time only one
   instance of the job represented by this job descriptor can be executed."
   [job-var]
-  {:pre [(job-fn/simple-ci-job? (var-get job-var))]}
+  {:pre [(job-fn/job-fn? (var-get job-var))]}
   (-> {:job-var job-var
        :job-fn (var-get job-var)
        :executions (ref [] :validator vector?)

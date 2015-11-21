@@ -2,7 +2,7 @@
   (:require [fhofherr.simple.engine.jobs [execution-context :as ex-ctx]]))
 
 ;; TODO rename to job-fn?
-(defn simple-ci-job?
+(defn job-fn?
   "Check if the given object is a Simple CI job."
   [obj]
   (boolean (:ci-job? (meta obj))))

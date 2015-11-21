@@ -13,7 +13,7 @@
   (testing "ci jobs have :ci-job? in their meta data"
     (let [job (job-fn/make-job {:test identity})]
       (is (:ci-job? (meta job)))
-      (is (job-fn/simple-ci-job? job))))
+      (is (job-fn/job-fn? job))))
 
   (testing "ci jobs are functions of a job context"
     (let [job (job-fn/make-job {:test (register-execution :job)})
