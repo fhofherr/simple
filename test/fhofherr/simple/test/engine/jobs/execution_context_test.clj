@@ -6,7 +6,7 @@
 (deftest execution-context
 
   (let [project-dir "path/to/some/directory"
-        context (ex-ctx/initial-context project-dir)]
+        context (ex-ctx/make-job-execution-context project-dir)]
 
     (testing "the initial context contains the project directory"
       (is (= project-dir (:project-dir context))))

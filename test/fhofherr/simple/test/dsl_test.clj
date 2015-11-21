@@ -18,11 +18,11 @@
   (files/with-tmp-dir
     [path]
     (let [script-path (copy-script path "successful-shell-script.sh")
-          new-ctx ((dsl/execute script-path) (ex-ctx/initial-context path))]
+          new-ctx ((dsl/execute script-path) (ex-ctx/make-job-execution-context path))]
       (is (not (sm/failed? new-ctx))))
 
     (let [script-path (copy-script path "failing-shell-script.sh")
-          new-ctx ((dsl/execute script-path) (ex-ctx/initial-context path))]
+          new-ctx ((dsl/execute script-path) (ex-ctx/make-job-execution-context path))]
       (is (sm/failed? new-ctx)))))
 
 (dsl/defjob unit-test-job

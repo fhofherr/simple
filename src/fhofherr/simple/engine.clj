@@ -23,5 +23,5 @@
   (if-let [jd (get-in engine [:jobs (name job-name)])]
     (as-> engine $
         (:project-dir $)
-        (ex-ctx/initial-context $)
+        (ex-ctx/make-job-execution-context $)
         (jobs/schedule-job! jd $))))

@@ -36,8 +36,7 @@
   (mark-successful [this] (assoc this :state :successful))
   (mark-failed [this] (assoc this :state :failed)))
 
-;; TODO Rename to make-job-execution-context
-(defn initial-context
+(defn make-job-execution-context
   "Initial context of a job execution."
   [project-dir]
   (map->JobExecutionContext {:project-dir project-dir

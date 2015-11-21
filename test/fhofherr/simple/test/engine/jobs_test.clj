@@ -19,13 +19,13 @@
 
   (testing "ci jobs are functions of a job context"
     (let [job (jobs/make-job {:test (register-execution :job)})
-          new-ctx (job (ex-ctx/initial-context "."))]
+          new-ctx (job (ex-ctx/make-job-execution-context "."))]
       (is (= [:job] (get-in new-ctx [:payload :executions])))))
 
   (testing "ci jobs execute their `:before` function before the `:test`"
     (let [job (jobs/make-job {:before (register-execution :before)
                                 :test (register-execution :test)})
-          new-ctx (job (ex-ctx/initial-context "."))]
+          new-ctx (job (ex-ctx/make-job-execution-context "."))]
       (is (= [:before :test] (get-in new-ctx [:payload :executions])))))
 
   (testing "the `:test` is not executed if `:before` fails the job"
@@ -33,13 +33,13 @@
                                           (register-execution :before)
                                           #(sm/mark-failed %))
                                 :test (register-execution :test)})
-          new-ctx (job (ex-ctx/initial-context "."))]
+          new-ctx (job (ex-ctx/make-job-execution-context "."))]
       (is (= [:before] (get-in new-ctx [:payload :executions])))))
 
   (testing "ci jobs execute their `:after` function after the `:test`"
     (let [job (jobs/make-job {:test (register-execution :test)
                                 :after (register-execution :after)})
-          new-ctx (job (ex-ctx/initial-context "."))]
+          new-ctx (job (ex-ctx/make-job-execution-context "."))]
       (is (= [:test :after] (get-in new-ctx [:payload :executions])))))
 
   (testing "`:after` is executed even upon failure"
@@ -48,7 +48,7 @@
                                           #(sm/mark-failed %))
                                 :test (register-execution :test)
                                 :after (register-execution :after)})
-          new-ctx (job (ex-ctx/initial-context "."))]
+          new-ctx (job (ex-ctx/make-job-execution-context "."))]
       (is (= [:before :after] (get-in new-ctx [:payload :executions]))))
 
     (let [job (jobs/make-job {:before (register-execution :before)
@@ -56,7 +56,7 @@
                                         (register-execution :test)
                                         #(sm/mark-failed %))
                                 :after (register-execution :after)})
-          new-ctx (job (ex-ctx/initial-context "."))]
+          new-ctx (job (ex-ctx/make-job-execution-context "."))]
       (is (= [:before :test :after] (get-in new-ctx [:payload :executions]))))))
 
 (def successful-job (jobs/make-job {:test sm/mark-successful}))
@@ -92,12 +92,12 @@
     (let [prj-dir "./path/to/non-existent/dir"
           job-desc (jobs/make-job-descriptor #'successful-job)
           [exec-id exec] (jobs/make-job-execution! job-desc
-                                              (ex-ctx/initial-context prj-dir))]
+                                              (ex-ctx/make-job-execution-context prj-dir))]
       (is (sm/created? exec)))))
 
 (deftest schedule-jobs
   (let [prj-dir "./path/to/non-existent/dir"
-        ctx (ex-ctx/initial-context prj-dir)]
+        ctx (ex-ctx/make-job-execution-context prj-dir)]
 
     (testing "set a queued and an executing job's status"
       (reset! waiting-job-latch (CountDownLatch. 1))
