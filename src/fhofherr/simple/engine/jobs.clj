@@ -1,6 +1,7 @@
 (ns fhofherr.simple.engine.jobs
   (:require [clojure.tools.logging :as log]
-            [fhofherr.simple.engine.status-model :as sm]))
+            [fhofherr.simple.engine.status-model :as sm]
+            [fhofherr.simple.engine.jobs.execution-context :refer :all]))
 
 (defn simple-ci-job?
   "Check if the given object is a Simple CI job."
@@ -44,22 +45,6 @@
     (with-meta job {:ci-job? true})))
 
 (defrecord JobDescriptor [job-var job-fn executions executor])
-
-(defrecord JobExecutionContext [project-dir status]
-
-  sm/StatusModel
-  (created? [this] (= :created (:status this)))
-  (queued? [this] (= :queued (:status this)))
-  (executing? [this] (= :executing (:status this)))
-  (successful? [this] (= :successful (:status this)))
-  (failed? [this] (= :failed (:status this)))
-
-  sm/ChangeableStatusModel
-  (mark-created [this] (assoc this :status :created))
-  (mark-queued [this] (assoc this :status :queued))
-  (mark-executing [this] (assoc this :status :executing))
-  (mark-successful [this] (assoc this :status :successful))
-  (mark-failed [this] (assoc this :status :failed)))
 
 (defrecord JobExecution [context]
 
@@ -125,14 +110,6 @@
                     (count $)
                     (- $ 1)))]
     [exec-id exec]))
-
-;; TODO Rename to make-job-execution-context
-(defn initial-context
-  "Initial context of a job execution."
-  [project-dir]
-  (-> {:project-dir project-dir}
-      (map->JobExecutionContext)
-      (sm/mark-created)))
 
 (defn- update-job-execution!
   [job-desc exec-id f & args]

@@ -1,7 +1,8 @@
 (ns fhofherr.simple.engine
   (:require [fhofherr.simple.dsl] ; Required to pass it to load-config
             [fhofherr.simple.engine [config :as config]
-                                    [jobs :as jobs]]))
+                                    [jobs :as jobs]]
+            [fhofherr.simple.engine.jobs.execution-context :as ex-ctx]))
 
 (defn load-engine
   [project-dir config-file]
@@ -22,5 +23,5 @@
   (if-let [jd (get-in engine [:jobs (name job-name)])]
     (as-> engine $
         (:project-dir $)
-        (jobs/initial-context $)
+        (ex-ctx/initial-context $)
         (jobs/schedule-job! jd $))))

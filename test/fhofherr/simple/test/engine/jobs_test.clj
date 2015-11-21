@@ -1,20 +1,9 @@
 (ns fhofherr.simple.test.engine.jobs-test
   (:require [clojure.test :refer :all]
             [fhofherr.simple.engine [jobs :as jobs]
-                                    [status-model :as sm]])
+                                    [status-model :as sm]]
+            [fhofherr.simple.engine.jobs.execution-context :as ex-ctx])
   (:import [java.util.concurrent CountDownLatch]))
-
-(deftest execution-context
-
-  (testing "the initial context contains the project directory"
-    (let [project-dir "path/to/some/directory"]
-      (is (= project-dir (:project-dir (jobs/initial-context project-dir))))))
-
-  (testing "the initial context is never failed"
-    (is (not (sm/failed? (jobs/initial-context ".")))))
-
-  (testing "the context can be marked as failed"
-    (is (sm/failed? (sm/mark-failed (jobs/initial-context "."))))))
 
 (defn- register-execution
   [marker]
@@ -30,13 +19,13 @@
 
   (testing "ci jobs are functions of a job context"
     (let [job (jobs/make-job {:test (register-execution :job)})
-          new-ctx (job (jobs/initial-context "."))]
+          new-ctx (job (ex-ctx/initial-context "."))]
       (is (= [:job] (get-in new-ctx [:payload :executions])))))
 
   (testing "ci jobs execute their `:before` function before the `:test`"
     (let [job (jobs/make-job {:before (register-execution :before)
                                 :test (register-execution :test)})
-          new-ctx (job (jobs/initial-context "."))]
+          new-ctx (job (ex-ctx/initial-context "."))]
       (is (= [:before :test] (get-in new-ctx [:payload :executions])))))
 
   (testing "the `:test` is not executed if `:before` fails the job"
@@ -44,13 +33,13 @@
                                           (register-execution :before)
                                           #(sm/mark-failed %))
                                 :test (register-execution :test)})
-          new-ctx (job (jobs/initial-context "."))]
+          new-ctx (job (ex-ctx/initial-context "."))]
       (is (= [:before] (get-in new-ctx [:payload :executions])))))
 
   (testing "ci jobs execute their `:after` function after the `:test`"
     (let [job (jobs/make-job {:test (register-execution :test)
                                 :after (register-execution :after)})
-          new-ctx (job (jobs/initial-context "."))]
+          new-ctx (job (ex-ctx/initial-context "."))]
       (is (= [:test :after] (get-in new-ctx [:payload :executions])))))
 
   (testing "`:after` is executed even upon failure"
@@ -59,7 +48,7 @@
                                           #(sm/mark-failed %))
                                 :test (register-execution :test)
                                 :after (register-execution :after)})
-          new-ctx (job (jobs/initial-context "."))]
+          new-ctx (job (ex-ctx/initial-context "."))]
       (is (= [:before :after] (get-in new-ctx [:payload :executions]))))
 
     (let [job (jobs/make-job {:before (register-execution :before)
@@ -67,7 +56,7 @@
                                         (register-execution :test)
                                         #(sm/mark-failed %))
                                 :after (register-execution :after)})
-          new-ctx (job (jobs/initial-context "."))]
+          new-ctx (job (ex-ctx/initial-context "."))]
       (is (= [:before :test :after] (get-in new-ctx [:payload :executions]))))))
 
 (def successful-job (jobs/make-job {:test sm/mark-successful}))
@@ -103,12 +92,12 @@
     (let [prj-dir "./path/to/non-existent/dir"
           job-desc (jobs/make-job-descriptor #'successful-job)
           [exec-id exec] (jobs/make-job-execution! job-desc
-                                              (jobs/initial-context prj-dir))]
+                                              (ex-ctx/initial-context prj-dir))]
       (is (sm/created? exec)))))
 
 (deftest schedule-jobs
   (let [prj-dir "./path/to/non-existent/dir"
-        ctx (jobs/initial-context prj-dir)]
+        ctx (ex-ctx/initial-context prj-dir)]
 
     (testing "set a queued and an executing job's status"
       (reset! waiting-job-latch (CountDownLatch. 1))
