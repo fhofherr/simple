@@ -39,5 +39,6 @@
             (->> ctx
                  (apply-step before false)
                  (apply-step test false)
+                 ;; TODO execute in finally
                  (apply-step after true)))]
     (with-meta job {::job-fn? true})))
