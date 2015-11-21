@@ -12,40 +12,41 @@
       (is (= project-dir (:project-dir context))))
 
     (testing "the initial context has a state of created"
-      (is (= :created (sm/current-state context))))
+      (is (ex-ctx/created? context)))
 
     (testing "a newly created context can be marked as :executing"
-      (is (= :executing (-> context
-                            (ex-ctx/mark-executing)
-                            (sm/current-state))))
+      (is (ex-ctx/executing? (-> context
+                                 (ex-ctx/mark-executing))))
 
-      (doseq [s (disj ex-ctx/available-states :executing)]
-        (is (thrown? clojure.lang.ExceptionInfo
-                     (sm/transition-to-state context s)))))
+      (is (thrown? clojure.lang.ExceptionInfo
+                   (ex-ctx/mark-failed context)))
+
+      (is (thrown? clojure.lang.ExceptionInfo
+                   (ex-ctx/mark-successful context))))
 
     (testing "a executing context can transition to :successful or :failed"
       (let [executing-context (ex-ctx/mark-executing context)]
         (is (ex-ctx/successful? (ex-ctx/mark-successful executing-context)))
-        (is (ex-ctx/failed? (ex-ctx/mark-failed executing-context)))
-
-        (doseq [s (disj ex-ctx/available-states :successful :failed)]
-          (is (thrown? clojure.lang.ExceptionInfo
-                       (sm/transition-to-state executing-context s))))))
+        (is (ex-ctx/failed? (ex-ctx/mark-failed executing-context)))))
 
     (testing "the failed state is terminal"
       (let [failed-context (-> context
                                (ex-ctx/mark-executing)
                                (ex-ctx/mark-failed))]
 
-        (doseq [s (disj ex-ctx/available-states :failed)]
-          (is (thrown? clojure.lang.ExceptionInfo
-                       (sm/transition-to-state failed-context s))))))
+        (is (thrown? clojure.lang.ExceptionInfo
+                     (ex-ctx/mark-successful failed-context)))
+
+        (is (thrown? clojure.lang.ExceptionInfo
+                     (ex-ctx/mark-executing failed-context)))))
 
     (testing "the successful state is terminal"
       (let [successful-context (-> context
                                    (ex-ctx/mark-executing)
                                    (ex-ctx/mark-successful))]
 
-        (doseq [s (disj ex-ctx/available-states :successful)]
-          (is (thrown? clojure.lang.ExceptionInfo
-                       (sm/transition-to-state successful-context s))))))))
+        (is (thrown? clojure.lang.ExceptionInfo
+                     (ex-ctx/mark-failed successful-context)))
+
+        (is (thrown? clojure.lang.ExceptionInfo
+                     (ex-ctx/mark-executing successful-context)))))))

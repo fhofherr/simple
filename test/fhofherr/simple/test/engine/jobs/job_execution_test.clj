@@ -45,12 +45,12 @@
         ;; Guard assertion to ensure we actually have an executing context
         (is (ex-ctx/executing? (:context executing-exec)))
         (let [finished-exec (job-ex/mark-finished executing-exec)]
-          (is (= :successful (sm/current-state (:context finished-exec))))))
+          (is (ex-ctx/successful? (:context finished-exec)))))
 
-      (testing "marking an execution as finished whose context is :failed leaves
+      (testing "marking an execution as finished whose context is failed leaves
                it unchanged"
         (let [executing-exec* (update-in executing-exec
                                          [:context]
-                                         #(sm/transition-to-state % :failed))
+                                         ex-ctx/mark-failed)
               finished-exec (job-ex/mark-finished executing-exec*)]
-          (is (= :failed (sm/current-state (:context finished-exec)))))))))
+          (is (ex-ctx/failed? (:context finished-exec))))))))
