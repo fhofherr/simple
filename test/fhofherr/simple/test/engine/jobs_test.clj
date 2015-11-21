@@ -2,7 +2,8 @@
   (:require [clojure.test :refer :all]
             [fhofherr.simple.engine [jobs :as jobs]
                                     [status-model :as sm]]
-            [fhofherr.simple.engine.jobs.execution-context :as ex-ctx])
+            [fhofherr.simple.engine.jobs [execution-context :as ex-ctx]
+                                         [job-execution :as job-ex]])
   (:import [java.util.concurrent CountDownLatch]))
 
 (defn- register-execution
@@ -59,15 +60,15 @@
           new-ctx (job (ex-ctx/make-job-execution-context "."))]
       (is (= [:before :test :after] (get-in new-ctx [:payload :executions]))))))
 
-(def successful-job (jobs/make-job {:test sm/mark-successful}))
+(def successful-job (jobs/make-job {:test identity}))
 
-(def failing-job (jobs/make-job {:test sm/mark-failed}))
+(def failing-job (jobs/make-job {:test ex-ctx/mark-failed}))
 
 (def waiting-job-latch (atom (CountDownLatch. 1)))
 (def waiting-job (jobs/make-job {:test (fn [ctx]
                                            {:pre [@waiting-job-latch]}
                                            (.await @waiting-job-latch)
-                                           (sm/mark-successful ctx))}))
+                                           ctx)}))
 
 (def throwing-job (jobs/make-job {:test (fn [ctx]
                                             (throw (Throwable. "Kaboom, Baby!")))}))
@@ -79,12 +80,7 @@
       (is (= #'successful-job (:job-var job-desc)))
       (is (= successful-job (:job-fn job-desc)))
       (is (= [] @(:executions job-desc)))
-      (is (= -1 @(:executor job-desc)))
-      (is (sm/created? job-desc))
-      (is (not (sm/queued? job-desc)))
-      (is (not (sm/executing? job-desc)))
-      (is (not (sm/successful? job-desc)))
-      (is (not (sm/failed? job-desc))))))
+      (is (= -1 @(:executor job-desc))))))
 
 (deftest make-job-execution!
 
@@ -108,33 +104,29 @@
 
         (Thread/sleep 100)
         ;; The first execution is executing; the second execution is queued.
-        (is (sm/executing? (jobs/get-job-execution job-desc exec-id-1)))
-        (is (sm/queued? (jobs/get-job-execution job-desc exec-id-2)))
-
-        ;; The job descriptor has an executing and a queued execution and is
-        ;; thus executing and queued at the same time.
-        (is (sm/executing? job-desc))
-        (is (sm/queued? job-desc))
+        (is (job-ex/executing? (jobs/get-job-execution job-desc exec-id-1)))
+        (is (job-ex/queued? (jobs/get-job-execution job-desc exec-id-2)))
 
         (.countDown @waiting-job-latch)
         (await-for 5000 (:executor job-desc))
 
-        ;; After the completion of both executions the individual executions,
-        ;; as well as the job-descriptor are marked as successful.
-        (is (sm/successful? (jobs/get-job-execution job-desc exec-id-1)))
-        (is (sm/successful? (jobs/get-job-execution job-desc exec-id-2)))
-        (is (sm/successful? job-desc))))
+        ;; After the completion of both executions the job-descriptor is
+        ;; marked as successful.
+        (is (job-ex/finished? (jobs/get-job-execution job-desc exec-id-1)))
+        (is (job-ex/finished? (jobs/get-job-execution job-desc exec-id-2)))
+        (is (jobs/successful? job-desc))))
 
     (testing "mark execution and descriptor as failed if the job fails"
       (let [job-desc (jobs/make-job-descriptor #'failing-job)
             exec-id (jobs/schedule-job! job-desc ctx)]
         (await-for 5000 (:executor job-desc))
-        (is (sm/failed? (jobs/get-job-execution job-desc exec-id)))
-        (is (sm/failed? job-desc))))
+        (is (job-ex/finished? (jobs/get-job-execution job-desc exec-id)))
+        (is (jobs/failed? job-desc))))
 
+    ;; TODO: move test to job function
     (testing "mark execution and descriptor as failed if the job throws"
       (let [job-desc (jobs/make-job-descriptor #'throwing-job)
             exec-id (jobs/schedule-job! job-desc ctx)]
         (await-for 5000 (:executor job-desc))
-        (is (sm/failed? (jobs/get-job-execution job-desc exec-id)))
-        (is (sm/failed? job-desc))))))
+        (is (job-ex/finished? (jobs/get-job-execution job-desc exec-id)))
+        (is (jobs/failed? job-desc))))))

@@ -1,8 +1,7 @@
 (ns fhofherr.simple.engine.jobs
   (:require [clojure.tools.logging :as log]
-            [fhofherr.simple.engine.status-model :as sm]
-            [fhofherr.simple.engine.jobs.execution-context :refer :all]
-            [fhofherr.simple.engine.jobs.job-execution :as job-ex]))
+            [fhofherr.simple.engine.jobs [execution-context :as ex-ctx]
+                                         [job-execution :as job-ex]]))
 
 (defn simple-ci-job?
   "Check if the given object is a Simple CI job."
@@ -13,7 +12,7 @@
 (defn- apply-step
   [f ignore-failure? ctx]
   (if (and f
-           (or ignore-failure? (not (sm/failed? ctx))))
+           (or ignore-failure? (not (ex-ctx/failed? ctx))))
     (f ctx)
     ctx))
 
@@ -55,7 +54,7 @@
   * `:job-fn`: the function the `job-var` points to.
   * `:executions`: a ref containing a vector of all known job executions.
     The oldest execution comes first in the vector. The youngest execution
-    comes last. See [[make-job-execution]] for details about job executions.
+    comes last. See [[make-job-execution!]] for details about job executions.
     Initially empty.
   * `:executor`: an agent that asynchronously executes the job. The agent's
     value is the id of the last executed job execution and can be used to
@@ -102,8 +101,10 @@
 
 (defn- update-context!
   [job-desc exec-id f & args]
-  (update-job-execution! job-desc exec-id #(as-> (:context %) $
-                                             (apply f $ args))))
+  (update-job-execution! job-desc
+                         exec-id
+                         (fn [exec]
+                           (update-in exec [:context] #(apply f % args)))))
 
 (defn get-job-execution
   "Obtain the job execution with id `exec-id` from the job descriptor
@@ -121,9 +122,10 @@
   "Synchronously execute the job execution with id `exec-id`. See
   [[schedule-job!]] for asynchronous job execution. "
   [job-desc exec-id]
+  ;; TODO: move io! into job-fn
   (letfn [(apply-job-fn [job-fn exec] (io! (job-fn (:context exec))))]
     (log/info "Starting execution" exec-id "of job" (:job-var job-desc))
-    (update-job-execution! job-desc exec-id sm/mark-executing)
+    (update-job-execution! job-desc exec-id job-ex/mark-executing)
     (try
       (let [exec (get-job-execution job-desc exec-id)
             ;; Do not apply the job fn within a transaction (e.g. by using
@@ -131,7 +133,9 @@
             ;; the transaction fails.
             new-ctx (apply-job-fn (:job-fn job-desc) exec)]
         ;; Ignore the old context and return the new-ctx.
-        (update-context! job-desc exec-id (fn [_] new-ctx)))
+        (dosync
+          (update-context! job-desc exec-id (constantly new-ctx))
+          (update-job-execution! job-desc exec-id job-ex/mark-finished)))
       (log/info "Finished execution" exec-id "of job" (:job-var job-desc))
       ;; TODO: this does not belong here but in the job function.
       (catch Throwable t
@@ -141,7 +145,9 @@
                   "of job"
                   (:job-var job-desc)
                   "! Marking job as failed.")
-        (update-job-execution! job-desc exec-id sm/mark-failed)))))
+        (dosync
+          (update-context! job-desc exec-id ex-ctx/mark-failed)
+          (update-job-execution! job-desc exec-id job-ex/mark-finished))))))
 
 (defn schedule-job-execution!
   "Schedules the job execution identified by `exec-id` by sending it
@@ -155,7 +161,7 @@
             exec-id)]
     (log/info "Queueing execution" exec-id "of job" (:job-var job-desc))
     (dosync
-      (update-job-execution! job-desc exec-id sm/mark-queued)
+      (update-job-execution! job-desc exec-id job-ex/mark-queued)
       ;; execute-job! catches any Throwable thrown by the job and does not
       ;; rethrow it. The executor should thus never fail under normal
       ;; conditions.
@@ -192,11 +198,10 @@
       (subvec $ (if (< start-id 0) 0 start-id))
       (f $))))
 
-(extend-type JobDescriptor
-  sm/StatusModel
-  (created? [this] (and (empty? @(:executions this))
-                        (< @(:executor this) 0)))
-  (queued? [this] (apply-to-new-executions this #(some sm/queued? %)))
-  (executing? [this] (apply-to-new-executions this #(some sm/executing? %)))
-  (successful? [this] (apply-to-last-execution this sm/successful?))
-  (failed? [this] (apply-to-last-execution this sm/failed?)))
+(defn failed?
+  [job-desc]
+  (apply-to-last-execution job-desc #(-> % (:context) (ex-ctx/failed?))))
+
+(defn successful?
+  [job-desc]
+  (apply-to-last-execution job-desc #(-> % (:context) (ex-ctx/successful?))))
