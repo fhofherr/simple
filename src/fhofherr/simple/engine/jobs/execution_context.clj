@@ -46,6 +46,10 @@
   [^JobExecutionContext ex-ctx]
   (sm/transition-to-state ex-ctx :executing))
 
+(defn executing?
+  [^JobExecutionContext ex-ctx]
+  (= :executing (sm/current-state ex-ctx)))
+
 (defn mark-successful
   [^JobExecutionContext ex-ctx]
   (sm/transition-to-state ex-ctx :successful))

@@ -2,7 +2,7 @@
   (:require [clojure.tools.logging :as log]
             [fhofherr.simple.engine.status-model :as sm]
             [fhofherr.simple.engine.jobs.execution-context :refer :all]
-            [fhofherr.simple.engine.jobs.job-execution :refer :all]))
+            [fhofherr.simple.engine.jobs.job-execution :as job-ex]))
 
 (defn simple-ci-job?
   "Check if the given object is a Simple CI job."
@@ -73,6 +73,7 @@
        :executor (agent -1)}
       (map->JobDescriptor)))
 
+;; TODO: rename to add-job-execution! and make private
 (defn make-job-execution!
   "Creates a new execution for the job represented by `job-desc` and
   appends it to the job descriptors `:executions` vector. Uses `ctx` as the
@@ -84,9 +85,7 @@
 
   The newly created job execution will have its status set to created."
   [job-desc ctx]
-  (let [exec (-> {:context ctx}
-                 (map->JobExecution)
-                 (sm/mark-created))
+  (let [exec (job-ex/make-job-execution ctx)
         exec-id (dosync
                   (as-> (:executions job-desc) $
                     (alter $ conj exec)
