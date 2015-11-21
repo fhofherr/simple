@@ -5,7 +5,7 @@
 (defn job-fn?
   "Check if the given object is a Simple CI job."
   [obj]
-  (boolean (:ci-job? (meta obj))))
+  (boolean (::job-fn? (meta obj))))
 
 (defn- apply-step
   [f ignore-failure? ctx]
@@ -40,4 +40,4 @@
                  (apply-step before false)
                  (apply-step test false)
                  (apply-step after true)))]
-    (with-meta job {:ci-job? true})))
+    (with-meta job {::job-fn? true})))

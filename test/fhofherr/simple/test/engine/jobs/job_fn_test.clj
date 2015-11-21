@@ -10,10 +10,11 @@
 
 (deftest make-job
 
-  (testing "ci jobs have :ci-job? in their meta data"
-    (let [job (job-fn/make-job {:test identity})]
-      (is (:ci-job? (meta job)))
-      (is (job-fn/job-fn? job))))
+  (testing "job functions are marked as such"
+    (let [job (job-fn/make-job {:test identity})
+          not-a-job identity]
+      (is (job-fn/job-fn? job))
+      (is (false? (job-fn/job-fn? not-a-job)))))
 
   (testing "ci jobs are functions of a job context"
     (let [job (job-fn/make-job {:test (register-execution :job)})
