@@ -1,7 +1,8 @@
 (ns fhofherr.simple.engine.jobs
   (:require [clojure.tools.logging :as log]
             [fhofherr.simple.engine.status-model :as sm]
-            [fhofherr.simple.engine.jobs.execution-context :refer :all]))
+            [fhofherr.simple.engine.jobs.execution-context :refer :all]
+            [fhofherr.simple.engine.jobs.job-execution :refer :all]))
 
 (defn simple-ci-job?
   "Check if the given object is a Simple CI job."
@@ -45,24 +46,6 @@
     (with-meta job {:ci-job? true})))
 
 (defrecord JobDescriptor [job-var job-fn executions executor])
-
-(defrecord JobExecution [context]
-
-  sm/StatusModel
-  (created? [this] (sm/created? (:context this)))
-  (queued? [this] (sm/queued? (:context this)))
-  (executing? [this] (sm/executing? (:context this)))
-  (successful? [this] (sm/successful? (:context this)))
-  (failed? [this] (sm/failed? (:context this)))
-
-  ;; TODO this is convenient, but should it exist?
-  sm/ChangeableStatusModel
-  (mark-created [this] (update-in this [:context] sm/mark-created))
-  (mark-queued [this] (update-in this [:context] sm/mark-queued))
-  (mark-executing [this] (update-in this [:context] sm/mark-executing))
-  (mark-successful [this] (update-in this [:context] sm/mark-successful))
-  (mark-failed [this] (update-in this [:context] sm/mark-failed)))
-
 
 (defn make-job-descriptor
   "Create a new job descriptor for the `job-var`. The returned job descriptor
