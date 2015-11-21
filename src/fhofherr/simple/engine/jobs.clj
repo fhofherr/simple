@@ -133,6 +133,7 @@
         ;; Ignore the old context and return the new-ctx.
         (update-context! job-desc exec-id (fn [_] new-ctx)))
       (log/info "Finished execution" exec-id "of job" (:job-var job-desc))
+      ;; TODO: this does not belong here but in the job function.
       (catch Throwable t
         (log/warn t
                   "Exception occured during execution"
