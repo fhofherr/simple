@@ -50,7 +50,8 @@
 (defn alter-job-execution!
   "Apply the function `f` to the execution with id `exec-id` in the job
   descriptor's vector of executions. Replace the old value by the job
-  execution returned by `f`."
+  execution returned by `f`. `f` is executed *outside* of a transaction
+  and may have side-effects."
   [job-desc exec-id f & args]
   (let [apply-f (fn [exec]
                   {:post [(job-ex/job-execution? %)]}
@@ -66,42 +67,17 @@
         (alter $ assoc exec-id new-exec))))
   job-desc)
 
-(defn- update-context!
-  [job-desc exec-id f & args]
-  (alter-job-execution! job-desc
-                         exec-id
-                         (fn [exec]
-                           (update-in exec [:context] #(apply f % args)))))
-
-(defn get-job-execution
-  "Obtain the job execution with id `exec-id` from the job descriptor
-  `job-desc`. Return `nil` if no execution with `exec-id` exists."
-  [job-desc exec-id]
-  (get @(:executions job-desc) exec-id))
-
-(defn get-last-execution
-  "Obtain the last executed job execution from `job-desc`. Return `nil`
-  if no job has been executed yet."
-  [job-desc]
-  (get-job-execution job-desc @(:executor job-desc)))
-
 (defn execute-job!
   "Synchronously execute the job execution with id `exec-id`. See
   [[schedule-job!]] for asynchronous job execution. "
   [job-desc exec-id]
-  (letfn [(apply-job-fn [job-fn exec] (job-fn (:context exec)))]
+  (let [job-fn #(io! ((:job-fn job-desc) %))]
     (log/info "Starting execution" exec-id "of job" (:job-var job-desc))
-    (alter-job-execution! job-desc exec-id job-ex/mark-executing)
-    (let [exec (get-job-execution job-desc exec-id)
-          ;; Do not apply the job fn within a transaction (e.g. by using
-          ;; update-context!). This would re-execute the tests if commiting
-          ;; the transaction fails.
-          new-ctx (apply-job-fn (:job-fn job-desc) exec)]
-      (log/info "Finished execution" exec-id "of job" (:job-var job-desc))
-      (dosync
-        ;; Replace the old context with new-ctx.
-        (update-context! job-desc exec-id (constantly new-ctx))
-        (alter-job-execution! job-desc exec-id job-ex/mark-finished)))))
+    (-> job-desc
+      (alter-job-execution! exec-id job-ex/mark-executing)
+      (alter-job-execution! exec-id job-ex/update-context job-fn)
+      (alter-job-execution! exec-id job-ex/mark-finished))
+    (log/info "Finished execution" exec-id "of job" (:job-var job-desc))))
 
 (defn schedule-job-execution!
   "Schedules the job execution identified by `exec-id` by sending it
@@ -114,12 +90,11 @@
             (execute-job! job-desc exec-id)
             exec-id)]
     (log/info "Queueing execution" exec-id "of job" (:job-var job-desc))
-    (dosync
-      (alter-job-execution! job-desc exec-id job-ex/mark-queued)
-      ;; Jobs catch any Throwable thrown by the job steps and do not
-      ;; rethrow it. The executor should thus never fail under normal
-      ;; conditions.
-      (send-off (:executor job-desc) do-execute))
+    (alter-job-execution! job-desc exec-id job-ex/mark-queued)
+    ;; Jobs catch any Throwable thrown by the job steps and do not
+    ;; rethrow it. The executor should thus never fail under normal
+    ;; conditions.
+    (send-off (:executor job-desc) do-execute)
     job-desc))
 
 ;; TODO pass job execution instead of initial context
@@ -132,6 +107,18 @@
                                     (job-ex/make-job-execution initial-ctx))]
     (schedule-job-execution! job-desc exec-id)
     exec-id))
+
+(defn get-job-execution
+  "Obtain the job execution with id `exec-id` from the job descriptor
+  `job-desc`. Return `nil` if no execution with `exec-id` exists."
+  [job-desc exec-id]
+  (get @(:executions job-desc) exec-id))
+
+(defn get-last-execution
+  "Obtain the last executed job execution from `job-desc`. Return `nil`
+  if no job has been executed yet."
+  [job-desc]
+  (get-job-execution job-desc @(:executor job-desc)))
 
 (defn- apply-to-last-execution
   "Apply the function `f` to the last job execution of `job-desc`. Return
