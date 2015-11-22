@@ -6,6 +6,7 @@
 
 (defrecord JobDescriptor [job-var job-fn executions executor])
 
+;; TODO pass job-fn instead of job-var (and maybe a job name)
 (defn make-job-descriptor
   "Create a new job descriptor for the `job-var`. The returned job descriptor
   has the following keys:
@@ -46,16 +47,28 @@
                     (- $ 1)))]
     exec-id))
 
-(defn- update-job-execution!
+(defn alter-job-execution!
+  "Apply the function `f` to the execution with id `exec-id` in the job
+  descriptor's vector of executions. Replace the old value by the job
+  execution returned by `f`."
   [job-desc exec-id f & args]
-  (dosync
-    (as-> (:executions job-desc) execs
-      (alter execs update-in [exec-id] #(apply f % args))))
+  (let [apply-f (fn [exec]
+                  {:post [(job-ex/job-execution? %)]}
+                  (apply f exec args))
+        new-exec (-> job-desc
+                     (:executions)
+                     (deref)
+                     (get exec-id)
+                     (apply-f))]
+    (dosync
+      (as-> job-desc $
+        (:executions $)
+        (alter $ assoc exec-id new-exec))))
   job-desc)
 
 (defn- update-context!
   [job-desc exec-id f & args]
-  (update-job-execution! job-desc
+  (alter-job-execution! job-desc
                          exec-id
                          (fn [exec]
                            (update-in exec [:context] #(apply f % args)))))
@@ -78,7 +91,7 @@
   [job-desc exec-id]
   (letfn [(apply-job-fn [job-fn exec] (job-fn (:context exec)))]
     (log/info "Starting execution" exec-id "of job" (:job-var job-desc))
-    (update-job-execution! job-desc exec-id job-ex/mark-executing)
+    (alter-job-execution! job-desc exec-id job-ex/mark-executing)
     (let [exec (get-job-execution job-desc exec-id)
           ;; Do not apply the job fn within a transaction (e.g. by using
           ;; update-context!). This would re-execute the tests if commiting
@@ -88,7 +101,7 @@
       (dosync
         ;; Replace the old context with new-ctx.
         (update-context! job-desc exec-id (constantly new-ctx))
-        (update-job-execution! job-desc exec-id job-ex/mark-finished)))))
+        (alter-job-execution! job-desc exec-id job-ex/mark-finished)))))
 
 (defn schedule-job-execution!
   "Schedules the job execution identified by `exec-id` by sending it
@@ -102,7 +115,7 @@
             exec-id)]
     (log/info "Queueing execution" exec-id "of job" (:job-var job-desc))
     (dosync
-      (update-job-execution! job-desc exec-id job-ex/mark-queued)
+      (alter-job-execution! job-desc exec-id job-ex/mark-queued)
       ;; Jobs catch any Throwable thrown by the job steps and do not
       ;; rethrow it. The executor should thus never fail under normal
       ;; conditions.

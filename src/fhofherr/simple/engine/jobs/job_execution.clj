@@ -28,6 +28,11 @@
       (get possible-state-transitions $)
       (contains? $ s))))
 
+(defn job-execution?
+  "Check if `obj` is a job execution"
+  [obj]
+  (instance? JobExecution obj))
+
 (defn make-job-execution
   [context]
   (map->JobExecution {:context context

@@ -44,6 +44,32 @@
           exec-id (jobs/add-job-execution! job-desc exec)]
       (is (= exec (get @(:executions job-desc) exec-id))))))
 
+(deftest alter-job-execution!
+  (let [job-desc (jobs/make-job-descriptor #'successful-job)
+        exec (job-ex/make-job-execution initial-ctx)
+        exec-id (jobs/add-job-execution! job-desc exec)]
+
+    (testing "f must return a job execution"
+      (is (thrown? AssertionError
+                   (jobs/alter-job-execution! job-desc
+                                              exec-id
+                                              (constantly "Not a job execution")))))
+
+    (testing "f is applied outside a transaction"
+      (jobs/alter-job-execution! job-desc
+                                 exec-id
+                                 #(io! (identity %)))
+      (is (= exec (jobs/get-job-execution job-desc exec-id)))))
+
+  ;; Since this actually alters the job-desc we create a new one here.
+  (testing "exec is replaced by f's result"
+    (let [job-desc (jobs/make-job-descriptor #'successful-job)
+          exec (job-ex/make-job-execution initial-ctx)
+          exec-id (jobs/add-job-execution! job-desc exec)
+          alter-exec #(assoc % :altered true)]
+      (jobs/alter-job-execution! job-desc exec-id alter-exec)
+      (is (true? (:altered (jobs/get-job-execution job-desc exec-id)))))))
+
 (deftest schedule-jobs
   (let [prj-dir "./path/to/non-existent/dir"
         ctx (ex-ctx/make-job-execution-context prj-dir)]
