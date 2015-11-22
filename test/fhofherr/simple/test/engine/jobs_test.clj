@@ -7,18 +7,22 @@
                                          [job-execution :as job-ex]])
   (:import [java.util.concurrent CountDownLatch]))
 
-(def successful-job (job-fn/make-job {:test identity}))
+(def successful-job (job-fn/make-job-fn
+                      {:test (job-fn/make-job-step-fn
+                               "test"
+                               identity)}))
 
-(def failing-job (job-fn/make-job {:test ex-ctx/mark-failed}))
+(def failing-job (job-fn/make-job-fn {:test (job-fn/make-job-step-fn
+                                              "test"
+                                              ex-ctx/mark-failed)}))
 
 (def waiting-job-latch (atom (CountDownLatch. 1)))
-(def waiting-job (job-fn/make-job {:test (fn [ctx]
-                                           {:pre [@waiting-job-latch]}
-                                           (.await @waiting-job-latch)
-                                           ctx)}))
-
-(def throwing-job (job-fn/make-job {:test (fn [ctx]
-                                            (throw (Throwable. "Kaboom, Baby!")))}))
+(def waiting-job (job-fn/make-job-fn {:test (job-fn/make-job-step-fn
+                                              "test"
+                                              (fn [ctx]
+                                                {:pre [@waiting-job-latch]}
+                                                (.await @waiting-job-latch)
+                                                ctx))}))
 
 (deftest make-job-descriptor
 
@@ -65,14 +69,6 @@
 
     (testing "mark execution and descriptor as failed if the job fails"
       (let [job-desc (jobs/make-job-descriptor #'failing-job)
-            exec-id (jobs/schedule-job! job-desc ctx)]
-        (await-for 5000 (:executor job-desc))
-        (is (job-ex/finished? (jobs/get-job-execution job-desc exec-id)))
-        (is (jobs/failed? job-desc))))
-
-    ;; TODO: move test to job function
-    (testing "mark execution and descriptor as failed if the job throws"
-      (let [job-desc (jobs/make-job-descriptor #'throwing-job)
             exec-id (jobs/schedule-job! job-desc ctx)]
         (await-for 5000 (:executor job-desc))
         (is (job-ex/finished? (jobs/get-job-execution job-desc exec-id)))

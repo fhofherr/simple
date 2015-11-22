@@ -82,32 +82,19 @@
   "Synchronously execute the job execution with id `exec-id`. See
   [[schedule-job!]] for asynchronous job execution. "
   [job-desc exec-id]
-  ;; TODO: move io! into job-fn
-  (letfn [(apply-job-fn [job-fn exec] (io! (job-fn (:context exec))))]
+  (letfn [(apply-job-fn [job-fn exec] (job-fn (:context exec)))]
     (log/info "Starting execution" exec-id "of job" (:job-var job-desc))
     (update-job-execution! job-desc exec-id job-ex/mark-executing)
-    (try
-      (let [exec (get-job-execution job-desc exec-id)
-            ;; Do not apply the job fn within a transaction (e.g. by using
-            ;; update-context!). This would re-execute the tests if commiting
-            ;; the transaction fails.
-            new-ctx (apply-job-fn (:job-fn job-desc) exec)]
-        ;; Ignore the old context and return the new-ctx.
-        (dosync
-          (update-context! job-desc exec-id (constantly new-ctx))
-          (update-job-execution! job-desc exec-id job-ex/mark-finished)))
+    (let [exec (get-job-execution job-desc exec-id)
+          ;; Do not apply the job fn within a transaction (e.g. by using
+          ;; update-context!). This would re-execute the tests if commiting
+          ;; the transaction fails.
+          new-ctx (apply-job-fn (:job-fn job-desc) exec)]
       (log/info "Finished execution" exec-id "of job" (:job-var job-desc))
-      ;; TODO: this does not belong here but in the job function.
-      (catch Throwable t
-        (log/warn t
-                  "Exception occured during execution"
-                  exec-id
-                  "of job"
-                  (:job-var job-desc)
-                  "! Marking job as failed.")
-        (dosync
-          (update-context! job-desc exec-id ex-ctx/mark-failed)
-          (update-job-execution! job-desc exec-id job-ex/mark-finished))))))
+      (dosync
+        ;; Replace the old context with new-ctx.
+        (update-context! job-desc exec-id (constantly new-ctx))
+        (update-job-execution! job-desc exec-id job-ex/mark-finished)))))
 
 (defn schedule-job-execution!
   "Schedules the job execution identified by `exec-id` by sending it
@@ -122,7 +109,7 @@
     (log/info "Queueing execution" exec-id "of job" (:job-var job-desc))
     (dosync
       (update-job-execution! job-desc exec-id job-ex/mark-queued)
-      ;; execute-job! catches any Throwable thrown by the job and does not
+      ;; Jobs catch any Throwable thrown by the job steps and do not
       ;; rethrow it. The executor should thus never fail under normal
       ;; conditions.
       (send-off (:executor job-desc) do-execute))

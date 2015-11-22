@@ -22,6 +22,11 @@
       (get state-transitions $)
       (contains? $ next-state))))
 
+(defn job-execution-context?
+  "Check if the given object `obj` is a job execution context."
+  [obj]
+  (instance? JobExecutionContext obj))
+
 (defn make-job-execution-context
   "Initial context of a job execution."
   [project-dir]

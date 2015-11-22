@@ -47,9 +47,16 @@
   ```
 
   See [[job-fn/make-job]] for further details about Simple CI jobs."
-  [job-name & {:as jobdef}]
-  (let [jobdef# jobdef]
-    `(def ~job-name (job-fn/make-job ~jobdef#))))
+  [job-name & {:keys [before test after]}]
+  (let [before# (and before
+                     `(job-fn/make-job-step-fn '~before ~before))
+        test# (and test
+                   `(job-fn/make-job-step-fn '~test ~test))
+        after# (and after
+                    `(job-fn/make-job-step-fn '~after ~after))]
+    `(def ~job-name (job-fn/make-job-fn {:before ~before#
+                                         :test ~test#
+                                         :after ~after#}))))
 
 (defn execute
   "Create a test command that executes the given executable using
