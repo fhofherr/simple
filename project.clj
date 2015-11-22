@@ -12,13 +12,16 @@
   :target-path "target/%s"
   :test-selectors {:unit (complement :integration)
                    :integration :integration}
-  :plugins [[codox "0.8.15" :exclusions [[org.clojure/clojure]]]
+  :plugins [[lein-codox "0.9.0" :exclusions [[org.clojure/clojure]]]
             [lein-cljfmt "0.3.0"]]
-  :codox {:output-dir "target/doc/api"
-          :src-dir-uri "https://github.com/fhofherr/simple/blob/master/"
-          :src-linenum-anchor-prefix "L"
-          :defaults {:doc/format :markdown}
-          :exclude [user]}
+  :codox {:output-path "target/doc"
+          :source-uri "https://github.com/fhofherr/simple/blob/master/{filepath}#L{line}"
+          :metadata {:doc/format :markdown}
+          :doc-paths ["doc"
+                      "README.md"
+                      "CHANGELOG.md"]
+          :namespaces [#"fhofherr\.simple.*"
+                       #"fhofherr\.clj-io.*"]}
   :profiles {:dev {:source-paths ["dev"]
                    :resource-paths ["dev-resources" "test-resources"]
                    :dependencies [[org.clojure/tools.namespace "0.2.11"]]}
