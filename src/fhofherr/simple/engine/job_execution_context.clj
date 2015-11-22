@@ -19,8 +19,8 @@
   (transition-possible? [this next-state]
     {:pre [(sm/state-valid? this next-state)]}
     (as-> (sm/current-state this) $
-      (get state-transitions $)
-      (contains? $ next-state))))
+          (get state-transitions $)
+          (contains? $ next-state))))
 
 (defn job-execution-context?
   "Check if the given object `obj` is a job execution context."

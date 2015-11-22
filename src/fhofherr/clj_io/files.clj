@@ -2,16 +2,16 @@
   (:refer-clojure :exclude [exists?])
   (:require [clojure.java.io :as io])
   (:import [java.nio.file CopyOption
-                          FileVisitResult
-                          Files
-                          LinkOption
-                          SimpleFileVisitor]
+            FileVisitResult
+            Files
+            LinkOption
+            SimpleFileVisitor]
            [java.time Instant]
            [java.nio.file.attribute FileAttribute
-                                    FileTime
-                                    PosixFileAttributes
-                                    PosixFileAttributeView
-                                    PosixFilePermission]))
+            FileTime
+            PosixFileAttributes
+            PosixFileAttributeView
+            PosixFilePermission]))
 
 (def ^:private no-follow-links (into-array LinkOption
                                            [LinkOption/NOFOLLOW_LINKS]))
@@ -70,8 +70,7 @@
     :group (has-posix-permissions? path #{PosixFilePermission/GROUP_EXECUTE})
     :others (has-posix-permissions? path #{PosixFilePermission/OTHERS_EXECUTE})))
 
-
-(def ^:private available-perms )
+(def ^:private available-perms)
 
 (defn- parse-perms
   [permstr perm-type]
@@ -98,10 +97,10 @@
   (let [perms (if (string? arg)
                 (parse-perms arg :owner)
                 (as-> [arg] $
-                  (into $ args)
-                  (partition 2 $)
-                  (map (fn [[t p]] (parse-perms p t)) $)
-                  (apply clojure.set/union $)))]
+                      (into $ args)
+                      (partition 2 $)
+                      (map (fn [[t p]] (parse-perms p t)) $)
+                      (apply clojure.set/union $)))]
     (set-posix-permissions path perms))
   path)
 

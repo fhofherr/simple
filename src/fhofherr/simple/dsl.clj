@@ -4,9 +4,9 @@
   from within the `simple.clj` project definition file."
   (:require [clojure.java.shell :refer [sh]]
             [fhofherr.simple.engine [config :as config]
-                                    [job-descriptor :as jobs]
-                                    [job-execution-context :as ex-ctx]
-                                    [job-fn :as job-fn]]))
+             [job-descriptor :as jobs]
+             [job-execution-context :as ex-ctx]
+             [job-fn :as job-fn]]))
 
 (defn- references-to-map
   [references]

@@ -3,7 +3,7 @@
             [fhofherr.clj-io.files :as files]
             [fhofherr.simple.dsl :as dsl]
             [fhofherr.simple.engine [job-execution-context :as ex-ctx]
-                                    [job-fn :as job-fn]]))
+             [job-fn :as job-fn]]))
 
 (defn- copy-script
   [path script-name]

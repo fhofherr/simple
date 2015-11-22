@@ -75,10 +75,10 @@
                     ((complement job-step-fn?) %))
               [test before after])
     (throw (IllegalArgumentException.
-             "The values for :test, :before, and :after must be job step functions")))
+            "The values for :test, :before, and :after must be job step functions")))
   (letfn [(job [ctx]
             (io!
-              (->> ctx
+             (->> ctx
                   ;; TODO should the context be marked as executing here
                   ;; instead of when transitioning the job execution?
                   ;; This would require to mark the context successful after

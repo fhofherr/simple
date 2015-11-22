@@ -14,8 +14,8 @@
   [project-dir]
   (let [engine (start-simple-ci project-dir)
         ci-job (->> engine
-                   (:jobs)
-                   (first))
+                    (:jobs)
+                    (first))
         exec-id (engine/start-job! engine (first ci-job))]
     (await-for 60000 (:executor (second ci-job)))
     (if-not (jobs/failed? (second ci-job))
