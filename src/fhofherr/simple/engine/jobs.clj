@@ -47,6 +47,12 @@
                     (- $ 1)))]
     exec-id))
 
+(defn get-job-execution
+  "Obtain the job execution with id `exec-id` from the job descriptor
+  `job-desc`. Return `nil` if no execution with `exec-id` exists."
+  [job-desc exec-id]
+  (get @(:executions job-desc) exec-id))
+
 (defn alter-job-execution!
   "Apply the function `f` to the execution with id `exec-id` in the job
   descriptor's vector of executions. Replace the old value by the job
@@ -57,14 +63,12 @@
                   {:post [(job-ex/job-execution? %)]}
                   (apply f exec args))
         new-exec (-> job-desc
-                     (:executions)
-                     (deref)
-                     (get exec-id)
+                     (get-job-execution exec-id)
                      (apply-f))]
     (dosync
-      (as-> job-desc $
-        (:executions $)
-        (alter $ assoc exec-id new-exec))))
+      (-> job-desc
+          (:executions)
+          (alter assoc exec-id new-exec))))
   job-desc)
 
 (defn execute-job!
@@ -108,43 +112,25 @@
     (schedule-job-execution! job-desc exec-id)
     exec-id))
 
-(defn get-job-execution
-  "Obtain the job execution with id `exec-id` from the job descriptor
-  `job-desc`. Return `nil` if no execution with `exec-id` exists."
-  [job-desc exec-id]
-  (get @(:executions job-desc) exec-id))
-
-(defn get-last-execution
+(defn get-last-executed-execution
   "Obtain the last executed job execution from `job-desc`. Return `nil`
   if no job has been executed yet."
   [job-desc]
   (get-job-execution job-desc @(:executor job-desc)))
 
-(defn- apply-to-last-execution
-  "Apply the function `f` to the last job execution of `job-desc`. Return
-  whatever `f` returns. If `job-desc` has no executions and `else` is given
-  return `else`. If `else` is not given and there are no job executions for
-  `job-desc` return `nil`."
+(defn- query-last-executed-execution
   [job-desc f & [else]]
-  (if-let [last-exec (get-last-execution job-desc)]
+  (if-let [last-exec (get-last-executed-execution job-desc)]
     (f last-exec)
     else))
 
-(defn- apply-to-new-executions
-  "Apply the function `f` to a vector of all of `job-desc`'s job executions
-  whose id is higher than the id of the last executed job execution. The vector
-  passed to `f` may be empty."
-  [job-desc f]
-  (let [execs @(:executions job-desc)
-        start-id @(:executor job-desc)]
-    (as-> execs $
-      (subvec $ (if (< start-id 0) 0 start-id))
-      (f $))))
-
 (defn failed?
+  "Check if the last executed job execution of `job-desc` failed."
   [job-desc]
-  (apply-to-last-execution job-desc #(-> % (:context) (ex-ctx/failed?))))
+  (query-last-executed-execution job-desc
+                                 #(-> % (:context) (ex-ctx/failed?))))
 
 (defn successful?
+  "Check if the last executed job execution of `job-desc` was successful."
   [job-desc]
-  (apply-to-last-execution job-desc #(-> % (:context) (ex-ctx/successful?))))
+  (query-last-executed-execution job-desc #(-> % (:context) (ex-ctx/successful?))))
