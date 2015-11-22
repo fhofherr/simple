@@ -1,31 +1,31 @@
 (ns fhofherr.simple.test.engine.job-descriptor-test
   (:require [clojure.test :refer :all]
             [fhofherr.simple.engine [job-descriptor :as jobs]
-                                    [status-model :as sm]
-                                    [job-fn :as job-fn]
-                                    [job-execution-context :as ex-ctx]
-                                    [job-execution :as job-ex]])
+             [status-model :as sm]
+             [job-fn :as job-fn]
+             [job-execution-context :as ex-ctx]
+             [job-execution :as job-ex]])
   (:import [java.util.concurrent CountDownLatch]))
 
 (def successful-job (job-fn/make-job-fn
-                      {:test (job-fn/make-job-step-fn
-                               "test"
-                               identity)}))
+                     {:test (job-fn/make-job-step-fn
+                             "test"
+                             identity)}))
 
 (def failing-job (job-fn/make-job-fn {:test (job-fn/make-job-step-fn
-                                              "test"
-                                              ex-ctx/mark-failed)}))
+                                             "test"
+                                             ex-ctx/mark-failed)}))
 
 (def waiting-job-latch (atom (CountDownLatch. 1)))
 (def waiting-job (job-fn/make-job-fn {:test (job-fn/make-job-step-fn
-                                              "test"
-                                              (fn [ctx]
-                                                {:pre [@waiting-job-latch]}
-                                                (.await @waiting-job-latch)
-                                                ctx))}))
+                                             "test"
+                                             (fn [ctx]
+                                               {:pre [@waiting-job-latch]}
+                                               (.await @waiting-job-latch)
+                                               ctx))}))
 
 (def initial-ctx (ex-ctx/make-job-execution-context
-                   "./path/to/non-existent/dir"))
+                  "./path/to/non-existent/dir"))
 
 (deftest make-job-descriptor
 

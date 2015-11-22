@@ -1,11 +1,11 @@
 (ns fhofherr.simple.test.engine.job-execution-test
   (:require [clojure.test :refer :all]
             [fhofherr.simple.engine [status-model :as sm]
-                                    [job-execution-context :as ex-ctx]
-                                    [job-execution :as job-ex]]))
+             [job-execution-context :as ex-ctx]
+             [job-execution :as job-ex]]))
 
 (def initial-ctx (-> "path/to/some/directory"
-                         (ex-ctx/make-job-execution-context)))
+                     (ex-ctx/make-job-execution-context)))
 (deftest job-execution
   (let [execution (job-ex/make-job-execution initial-ctx)]
 

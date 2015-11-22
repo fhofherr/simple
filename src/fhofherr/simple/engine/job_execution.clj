@@ -1,6 +1,6 @@
 (ns fhofherr.simple.engine.job-execution
   (:require [fhofherr.simple.engine [status-model :as sm]
-                                    [job-execution-context :as ex-ctx]]))
+             [job-execution-context :as ex-ctx]]))
 
 (def ^:private possible-state-transitions {::created #{::queued}
                                            ::queued #{::executing}
@@ -24,9 +24,9 @@
   (transition-possible? [^JobExecution this s]
     {:pre [(sm/state-valid? this s)]}
     (as-> this $
-      (sm/current-state $)
-      (get possible-state-transitions $)
-      (contains? $ s))))
+          (sm/current-state $)
+          (get possible-state-transitions $)
+          (contains? $ s))))
 
 (defn job-execution?
   "Check if `obj` is a job execution"
@@ -62,8 +62,8 @@
 (defn mark-executing
   [^JobExecution job-exec]
   (as-> job-exec $
-    (update-context $ ex-ctx/mark-executing)
-    (sm/transition-to-state $ ::executing)))
+        (update-context $ ex-ctx/mark-executing)
+        (sm/transition-to-state $ ::executing)))
 
 (defn executing?
   [^JobExecution job-exec]
@@ -75,8 +75,8 @@
                               ctx
                               (ex-ctx/mark-successful ctx)))]
     (as-> job-exec $
-     (update-context $ update-ctx)
-     (sm/transition-to-state $ ::finished))))
+          (update-context $ update-ctx)
+          (sm/transition-to-state $ ::finished))))
 
 (defn finished?
   [^JobExecution job-exec]

@@ -23,10 +23,10 @@
   Simple CI jobs. Returns the public private mappings of the found jobs."
   [cidef-ns]
   (as-> cidef-ns $
-       (ns-publics $)
+        (ns-publics $)
        ;; TODO pass job-fn? as param ==> no dependency to job-fn
-       (filter #(-> %
-                    (second)
-                    (var-get)
-                    (job-fn/job-fn?))
-               $)))
+        (filter #(-> %
+                     (second)
+                     (var-get)
+                     (job-fn/job-fn?))
+                $)))

@@ -1,8 +1,8 @@
 (ns fhofherr.simple.engine.job-descriptor
   (:require [clojure.tools.logging :as log]
             [fhofherr.simple.engine [job-fn :as job-fn]
-                                    [job-execution-context :as ex-ctx]
-                                    [job-execution :as job-ex]]))
+             [job-execution-context :as ex-ctx]
+             [job-execution :as job-ex]]))
 
 (defrecord JobDescriptor [job-var job-fn executions executor])
 
@@ -41,10 +41,10 @@
   `:executions` vector."
   [job-desc exec]
   (let [exec-id (dosync
-                  (as-> (:executions job-desc) $
-                    (alter $ conj exec)
-                    (count $)
-                    (- $ 1)))]
+                 (as-> (:executions job-desc) $
+                       (alter $ conj exec)
+                       (count $)
+                       (- $ 1)))]
     exec-id))
 
 (defn get-job-execution
@@ -66,9 +66,9 @@
                      (get-job-execution exec-id)
                      (apply-f))]
     (dosync
-      (-> job-desc
-          (:executions)
-          (alter assoc exec-id new-exec))))
+     (-> job-desc
+         (:executions)
+         (alter assoc exec-id new-exec))))
   job-desc)
 
 (defn execute-job!
@@ -78,9 +78,9 @@
   (let [job-fn #(io! ((:job-fn job-desc) %))]
     (log/info "Starting execution" exec-id "of job" (:job-var job-desc))
     (-> job-desc
-      (alter-job-execution! exec-id job-ex/mark-executing)
-      (alter-job-execution! exec-id job-ex/update-context job-fn)
-      (alter-job-execution! exec-id job-ex/mark-finished))
+        (alter-job-execution! exec-id job-ex/mark-executing)
+        (alter-job-execution! exec-id job-ex/update-context job-fn)
+        (alter-job-execution! exec-id job-ex/mark-finished))
     (log/info "Finished execution" exec-id "of job" (:job-var job-desc))))
 
 (defn schedule-job-execution!
