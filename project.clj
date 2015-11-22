@@ -12,7 +12,8 @@
   :target-path "target/%s"
   :test-selectors {:unit (complement :integration)
                    :integration :integration}
-  :plugins [[codox "0.8.15" :exclusions [[org.clojure/clojure]]]]
+  :plugins [[codox "0.8.15" :exclusions [[org.clojure/clojure]]]
+            [lein-cljfmt "0.3.0"]]
   :codox {:output-dir "target/doc/api"
           :src-dir-uri "https://github.com/fhofherr/simple/blob/master/"
           :src-linenum-anchor-prefix "L"
