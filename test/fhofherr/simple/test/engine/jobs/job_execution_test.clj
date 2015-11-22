@@ -4,14 +4,13 @@
             [fhofherr.simple.engine.jobs [job-execution-context :as ex-ctx]
                                          [job-execution :as job-ex]]))
 
+(def initial-ctx (-> "path/to/some/directory"
+                         (ex-ctx/make-job-execution-context)))
 (deftest job-execution
-
-  (let [project-dir "path/to/some/directory"
-        context (ex-ctx/make-job-execution-context project-dir)
-        execution (job-ex/make-job-execution context)]
+  (let [execution (job-ex/make-job-execution initial-ctx)]
 
     (testing "the execution references the context"
-      (is (= context (:context execution))))
+      (is (= initial-ctx (:context execution))))
 
     (testing "the new executions state is created"
       (is (job-ex/created? execution)))
@@ -41,16 +40,29 @@
           (is (job-ex/finished? finished-exec))))
 
       (testing "marking an execution as finished whose context is executing
-               marks the context as :successful"
-        ;; Guard assertion to ensure we actually have an executing context
+               marks the initial-ctx as :successful"
+        ;; Guard assertion to ensure we actually have an executing initial-ctx
         (is (ex-ctx/executing? (:context executing-exec)))
         (let [finished-exec (job-ex/mark-finished executing-exec)]
           (is (ex-ctx/successful? (:context finished-exec)))))
 
       (testing "marking an execution as finished whose context is failed leaves
                it unchanged"
-        (let [executing-exec* (update-in executing-exec
-                                         [:context]
-                                         ex-ctx/mark-failed)
+        (let [executing-exec* (job-ex/update-context executing-exec
+                                                     ex-ctx/mark-failed)
               finished-exec (job-ex/mark-finished executing-exec*)]
           (is (ex-ctx/failed? (:context finished-exec))))))))
+
+(deftest update-context
+
+  (let [execution (job-ex/make-job-execution initial-ctx)]
+
+    (testing "f must return a job execution context"
+      (is (thrown? AssertionError
+                   (job-ex/update-context execution (constantly "not a context")))))
+
+    (testing "the executions old context is replaced by f's return value"
+      (let [new-exec (job-ex/update-context execution
+                                            #(assoc % :altered %2)
+                                            :something-new)]
+        (is (= :something-new (get-in new-exec [:context :altered])))))))

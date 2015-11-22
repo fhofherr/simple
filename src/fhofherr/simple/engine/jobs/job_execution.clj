@@ -49,10 +49,20 @@
   [^JobExecution job-exec]
   (= ::queued (sm/current-state job-exec)))
 
+(defn update-context
+  "Apply the function `f` job the job execuction `job-exec`'s
+  job execution context and replace the old context with the new one.
+  `f` must return another job execution context."
+  [^JobExecution job-exec f & args]
+  (letfn [(apply-f [ctx]
+            {:post [(ex-ctx/job-execution-context? %)]}
+            (apply f ctx args))]
+    (update-in job-exec [:context] apply-f)))
+
 (defn mark-executing
   [^JobExecution job-exec]
   (as-> job-exec $
-    (update-in $ [:context] ex-ctx/mark-executing)
+    (update-context $ ex-ctx/mark-executing)
     (sm/transition-to-state $ ::executing)))
 
 (defn executing?
@@ -65,7 +75,7 @@
                               ctx
                               (ex-ctx/mark-successful ctx)))]
     (as-> job-exec $
-     (update-in $ [:context] update-ctx)
+     (update-context $ update-ctx)
      (sm/transition-to-state $ ::finished))))
 
 (defn finished?
