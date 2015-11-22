@@ -1,7 +1,7 @@
 (ns fhofherr.simple.test.engine.config-test
   (:require [clojure.test :refer :all]
-            [fhofherr.simple.engine [config :as config]]
-            [fhofherr.simple.engine.jobs [job-fn :as job-fn]]))
+            [fhofherr.simple.engine [config :as config]
+                                    [job-fn :as job-fn]]))
 
 (def first-job (job-fn/make-job-fn {:test (job-fn/make-job-step-fn "test"
                                                                    identity)}))

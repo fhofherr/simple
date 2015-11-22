@@ -1,6 +1,6 @@
-(ns fhofherr.simple.engine.jobs.job-fn
+(ns fhofherr.simple.engine.job-fn
   (:require [clojure.tools.logging :as log]
-            [fhofherr.simple.engine.jobs [job-execution-context :as ex-ctx]]))
+            [fhofherr.simple.engine [job-execution-context :as ex-ctx]]))
 
 (defn ^:dynamic *log-step-execution*
   "TODO document me"

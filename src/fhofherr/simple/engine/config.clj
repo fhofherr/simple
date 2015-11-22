@@ -1,6 +1,6 @@
 (ns fhofherr.simple.engine.config
   (:require [clojure.tools.logging :as log]
-            [fhofherr.simple.engine.jobs [job-fn :as job-fn]]))
+            [fhofherr.simple.engine [job-fn :as job-fn]]))
 
 (def config-ns-name 'fhofherr.simple.projectdef)
 

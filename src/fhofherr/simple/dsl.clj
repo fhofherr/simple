@@ -3,10 +3,10 @@
   project definition file. All public functions in this namespace are available
   from within the `simple.clj` project definition file."
   (:require [clojure.java.shell :refer [sh]]
-            [fhofherr.simple.engine.job-descriptor :as jobs]
-            [fhofherr.simple.engine.config :as config]
-            [fhofherr.simple.engine.jobs [job-execution-context :as ex-ctx]
-                                         [job-fn :as job-fn]]))
+            [fhofherr.simple.engine [config :as config]
+                                    [job-descriptor :as jobs]
+                                    [job-execution-context :as ex-ctx]
+                                    [job-fn :as job-fn]]))
 
 (defn- references-to-map
   [references]

@@ -1,7 +1,7 @@
-(ns fhofherr.simple.test.engine.jobs.job-fn-test
+(ns fhofherr.simple.test.engine.job-fn-test
   (:require [clojure.test :refer :all]
-            [fhofherr.simple.engine.jobs [job-execution-context :as ex-ctx]
-                                         [job-fn :as job-fn]]))
+            [fhofherr.simple.engine [job-execution-context :as ex-ctx]
+                                    [job-fn :as job-fn]]))
 
 (defn- register-execution
   [marker]

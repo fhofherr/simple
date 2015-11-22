@@ -1,10 +1,10 @@
 (ns fhofherr.simple.test.engine.job-descriptor-test
   (:require [clojure.test :refer :all]
             [fhofherr.simple.engine [job-descriptor :as jobs]
-                                    [status-model :as sm]]
-            [fhofherr.simple.engine.jobs [job-fn :as job-fn]
-                                         [job-execution-context :as ex-ctx]
-                                         [job-execution :as job-ex]])
+                                    [status-model :as sm]
+                                    [job-fn :as job-fn]
+                                    [job-execution-context :as ex-ctx]
+                                    [job-execution :as job-ex]])
   (:import [java.util.concurrent CountDownLatch]))
 
 (def successful-job (job-fn/make-job-fn
