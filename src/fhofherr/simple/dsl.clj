@@ -5,7 +5,7 @@
   (:require [clojure.java.shell :refer [sh]]
             [fhofherr.simple.engine.jobs :as jobs]
             [fhofherr.simple.engine.config :as config]
-            [fhofherr.simple.engine.jobs [execution-context :as ex-ctx]
+            [fhofherr.simple.engine.jobs [job-execution-context :as ex-ctx]
                                          [job-fn :as job-fn]]))
 
 (defn- references-to-map

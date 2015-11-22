@@ -3,7 +3,7 @@
             [fhofherr.simple.engine [jobs :as jobs]
                                     [status-model :as sm]]
             [fhofherr.simple.engine.jobs [job-fn :as job-fn]
-                                         [execution-context :as ex-ctx]
+                                         [job-execution-context :as ex-ctx]
                                          [job-execution :as job-ex]])
   (:import [java.util.concurrent CountDownLatch]))
 

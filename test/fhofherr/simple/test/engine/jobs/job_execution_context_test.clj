@@ -1,9 +1,9 @@
-(ns fhofherr.simple.test.engine.jobs.execution-context-test
+(ns fhofherr.simple.test.engine.jobs.job-execution-context-test
   (:require [clojure.test :refer :all]
             [fhofherr.simple.engine.status-model :as sm]
-            [fhofherr.simple.engine.jobs.execution-context :as ex-ctx]))
+            [fhofherr.simple.engine.jobs.job-execution-context :as ex-ctx]))
 
-(deftest execution-context
+(deftest job-execution-context
 
   (let [project-dir "path/to/some/directory"
         context (ex-ctx/make-job-execution-context project-dir)]

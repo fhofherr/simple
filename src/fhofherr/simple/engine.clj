@@ -2,7 +2,7 @@
   (:require [fhofherr.simple.dsl] ; Required to pass it to load-config
             [fhofherr.simple.engine [config :as config]
                                     [jobs :as jobs]]
-            [fhofherr.simple.engine.jobs.execution-context :as ex-ctx]))
+            [fhofherr.simple.engine.jobs.job-execution-context :as ex-ctx]))
 
 (defn load-engine
   [project-dir config-file]

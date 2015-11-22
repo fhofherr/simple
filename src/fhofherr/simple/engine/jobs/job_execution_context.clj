@@ -1,4 +1,4 @@
-(ns fhofherr.simple.engine.jobs.execution-context
+(ns fhofherr.simple.engine.jobs.job-execution-context
   (:require [fhofherr.simple.engine.status-model :as sm]))
 
 (def ^:private state-transitions {::created #{::executing}

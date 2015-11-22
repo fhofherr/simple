@@ -1,7 +1,7 @@
 (ns fhofherr.simple.engine.jobs
   (:require [clojure.tools.logging :as log]
             [fhofherr.simple.engine.jobs [job-fn :as job-fn]
-                                         [execution-context :as ex-ctx]
+                                         [job-execution-context :as ex-ctx]
                                          [job-execution :as job-ex]]))
 
 (defrecord JobDescriptor [job-var job-fn executions executor])
