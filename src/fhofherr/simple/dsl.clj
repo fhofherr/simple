@@ -3,9 +3,10 @@
   project definition file. All public functions in this namespace are available
   from within the `simple.clj` project definition file."
   (:require [clojure.java.shell :refer [sh]]
-            [fhofherr.simple.engine.jobs :as jobs]
-            [fhofherr.simple.engine.config :as config]
-            [fhofherr.simple.engine.status-model :as sm]))
+            [fhofherr.simple.engine [config :as config]
+                                    [job-descriptor :as jobs]
+                                    [job-execution-context :as ex-ctx]
+                                    [job-fn :as job-fn]]))
 
 (defn- references-to-map
   [references]
@@ -45,10 +46,17 @@
     :test test-command)
   ```
 
-  See [[jobs/make-job]] for further details about Simple CI jobs."
-  [job-name & {:as jobdef}]
-  (let [jobdef# jobdef]
-    `(def ~job-name (jobs/make-job ~jobdef#))))
+  See [[job-fn/make-job]] for further details about Simple CI jobs."
+  [job-name & {:keys [before test after]}]
+  (let [before# (and before
+                     `(job-fn/make-job-step-fn '~before ~before))
+        test# (and test
+                   `(job-fn/make-job-step-fn '~test ~test))
+        after# (and after
+                    `(job-fn/make-job-step-fn '~after ~after))]
+    `(def ~job-name (job-fn/make-job-fn {:before ~before#
+                                         :test ~test#
+                                         :after ~after#}))))
 
 (defn execute
   "Create a test command that executes the given executable using
@@ -59,5 +67,5 @@
     (let [result (sh (str (:project-dir ctx) "/" executable))
           exit-code (:exit result)]
       (if (< 0 exit-code)
-        (sm/mark-failed ctx)
+        (ex-ctx/mark-failed ctx)
         ctx))))
