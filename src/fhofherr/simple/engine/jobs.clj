@@ -14,7 +14,7 @@
   * `:job-fn`: the function the `job-var` points to.
   * `:executions`: a ref containing a vector of all known job executions.
     The oldest execution comes first in the vector. The youngest execution
-    comes last. See [[make-job-execution!]] for details about job executions.
+    comes last. See [[add-job-execution!]] for details about job executions.
     Initially empty.
   * `:executor`: an agent that asynchronously executes the job. The agent's
     value is the id of the last executed job execution and can be used to
@@ -32,25 +32,19 @@
        :executor (agent -1)}
       (map->JobDescriptor)))
 
-;; TODO: rename to add-job-execution! and make private
-(defn make-job-execution!
-  "Creates a new execution for the job represented by `job-desc` and
-  appends it to the job descriptors `:executions` vector. Uses `ctx` as the
-  job execution's initial context.
+(defn add-job-execution!
+  "Appends the job execution `exec` to the job descriptor `job-desc`'s
+  `:executions` vector in a transaction.
 
-  Returns a tuple `[exec-id exec]` where `exec-id` is the id of the execution
-  with respect to the job descriptor's `:executions` vector and `exec` is
-  the execution itself.
-
-  The newly created job execution will have its status set to created."
-  [job-desc ctx]
-  (let [exec (job-ex/make-job-execution ctx)
-        exec-id (dosync
+  Returns the id of the execution with respect to the job descriptor's
+  `:executions` vector."
+  [job-desc exec]
+  (let [exec-id (dosync
                   (as-> (:executions job-desc) $
                     (alter $ conj exec)
                     (count $)
                     (- $ 1)))]
-    [exec-id exec]))
+    exec-id))
 
 (defn- update-job-execution!
   [job-desc exec-id f & args]
@@ -115,12 +109,14 @@
       (send-off (:executor job-desc) do-execute))
     job-desc))
 
+;; TODO pass job execution instead of initial context
 (defn schedule-job!
-  "Create a new job execution using [[make-job-execution!]] and immediately
+  "Create a new job execution using [[add-job-execution!]] and immediately
   schedule it using [[schedule-job-execution!]]. Return the job execution's
   id."
   [job-desc initial-ctx]
-  (let [[exec-id _] (make-job-execution! job-desc initial-ctx)]
+  (let [exec-id (add-job-execution! job-desc
+                                    (job-ex/make-job-execution initial-ctx))]
     (schedule-job-execution! job-desc exec-id)
     exec-id))
 

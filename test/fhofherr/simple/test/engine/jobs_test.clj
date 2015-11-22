@@ -24,6 +24,9 @@
                                                 (.await @waiting-job-latch)
                                                 ctx))}))
 
+(def initial-ctx (ex-ctx/make-job-execution-context
+                   "./path/to/non-existent/dir"))
+
 (deftest make-job-descriptor
 
   (testing "creates a job descriptor for a job var"
@@ -33,14 +36,13 @@
       (is (= [] @(:executions job-desc)))
       (is (= -1 @(:executor job-desc))))))
 
-(deftest make-job-execution!
+(deftest add-job-execution!
 
-  (testing "create a new job descriptor"
-    (let [prj-dir "./path/to/non-existent/dir"
-          job-desc (jobs/make-job-descriptor #'successful-job)
-          [exec-id exec] (jobs/make-job-execution! job-desc
-                                              (ex-ctx/make-job-execution-context prj-dir))]
-      (is (job-ex/created? exec)))))
+  (testing "add job execution to job descriptor"
+    (let [job-desc (jobs/make-job-descriptor #'successful-job)
+          exec (job-ex/make-job-execution initial-ctx)
+          exec-id (jobs/add-job-execution! job-desc exec)]
+      (is (= exec (get @(:executions job-desc) exec-id))))))
 
 (deftest schedule-jobs
   (let [prj-dir "./path/to/non-existent/dir"
