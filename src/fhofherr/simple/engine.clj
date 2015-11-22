@@ -1,7 +1,7 @@
 (ns fhofherr.simple.engine
   (:require [fhofherr.simple.dsl] ; Required to pass it to load-config
             [fhofherr.simple.engine [config :as config]
-                                    [jobs :as jobs]]
+                                    [job-descriptor :as jobs]]
             [fhofherr.simple.engine.jobs [job-execution :as job-ex]
                                          [job-execution-context :as ex-ctx]]))
 

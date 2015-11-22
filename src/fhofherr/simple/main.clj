@@ -1,7 +1,7 @@
 (ns fhofherr.simple.main
   (:require [clojure.java.io :as io]
             [fhofherr.simple.engine :as engine]
-            [fhofherr.simple.engine.jobs :as jobs])
+            [fhofherr.simple.engine.job-descriptor :as jobs])
   (:gen-class))
 
 (defn start-simple-ci
