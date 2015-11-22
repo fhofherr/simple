@@ -101,14 +101,13 @@
     (send-off (:executor job-desc) do-execute)
     job-desc))
 
-;; TODO pass job execution instead of initial context
 (defn schedule-job!
   "Create a new job execution using [[add-job-execution!]] and immediately
   schedule it using [[schedule-job-execution!]]. Return the job execution's
   id."
-  [job-desc initial-ctx]
-  (let [exec-id (add-job-execution! job-desc
-                                    (job-ex/make-job-execution initial-ctx))]
+  [job-desc exec]
+  {:pre [(job-ex/job-execution? exec)]}
+  (let [exec-id (add-job-execution! job-desc exec)]
     (schedule-job-execution! job-desc exec-id)
     exec-id))
 

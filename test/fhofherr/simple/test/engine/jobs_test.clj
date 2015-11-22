@@ -71,33 +71,32 @@
       (is (true? (:altered (jobs/get-job-execution job-desc exec-id)))))))
 
 (deftest schedule-jobs
-  (let [prj-dir "./path/to/non-existent/dir"
-        ctx (ex-ctx/make-job-execution-context prj-dir)]
+  (testing "set a queued and an executing job's status"
+    (reset! waiting-job-latch (CountDownLatch. 1))
 
-    (testing "set a queued and an executing job's status"
-      (reset! waiting-job-latch (CountDownLatch. 1))
+    (let [job-desc (jobs/make-job-descriptor #'waiting-job)
+          exec (job-ex/make-job-execution initial-ctx)
+          exec-id-1 (jobs/schedule-job! job-desc exec)
+          exec-id-2 (jobs/schedule-job! job-desc exec)]
 
-      (let [job-desc (jobs/make-job-descriptor #'waiting-job)
-            exec-id-1 (jobs/schedule-job! job-desc ctx)
-            exec-id-2 (jobs/schedule-job! job-desc ctx)]
+      (Thread/sleep 100)
+      ;; The first execution is executing; the second execution is queued.
+      (is (job-ex/executing? (jobs/get-job-execution job-desc exec-id-1)))
+      (is (job-ex/queued? (jobs/get-job-execution job-desc exec-id-2)))
 
-        (Thread/sleep 100)
-        ;; The first execution is executing; the second execution is queued.
-        (is (job-ex/executing? (jobs/get-job-execution job-desc exec-id-1)))
-        (is (job-ex/queued? (jobs/get-job-execution job-desc exec-id-2)))
+      (.countDown @waiting-job-latch)
+      (await-for 5000 (:executor job-desc))
 
-        (.countDown @waiting-job-latch)
-        (await-for 5000 (:executor job-desc))
+      ;; After the completion of both executions the job-descriptor is
+      ;; marked as successful.
+      (is (job-ex/finished? (jobs/get-job-execution job-desc exec-id-1)))
+      (is (job-ex/finished? (jobs/get-job-execution job-desc exec-id-2)))
+      (is (jobs/successful? job-desc))))
 
-        ;; After the completion of both executions the job-descriptor is
-        ;; marked as successful.
-        (is (job-ex/finished? (jobs/get-job-execution job-desc exec-id-1)))
-        (is (job-ex/finished? (jobs/get-job-execution job-desc exec-id-2)))
-        (is (jobs/successful? job-desc))))
-
-    (testing "mark execution and descriptor as failed if the job fails"
-      (let [job-desc (jobs/make-job-descriptor #'failing-job)
-            exec-id (jobs/schedule-job! job-desc ctx)]
-        (await-for 5000 (:executor job-desc))
-        (is (job-ex/finished? (jobs/get-job-execution job-desc exec-id)))
-        (is (jobs/failed? job-desc))))))
+  (testing "mark execution and descriptor as failed if the job fails"
+    (let [job-desc (jobs/make-job-descriptor #'failing-job)
+          exec (job-ex/make-job-execution initial-ctx)
+          exec-id (jobs/schedule-job! job-desc exec)]
+      (await-for 5000 (:executor job-desc))
+      (is (job-ex/finished? (jobs/get-job-execution job-desc exec-id)))
+      (is (jobs/failed? job-desc)))))
