@@ -1,6 +1,7 @@
 (ns fhofherr.simple.core
   (:require [fhofherr.simple.core.dsl] ; Required to pass it to load-config
             [fhofherr.simple.core [config :as config]
+             [job-fn :as job-fn]
              [job-descriptor :as jobs]
              [job-execution :as job-ex]
              [job-execution-context :as ex-ctx]]))
@@ -9,7 +10,7 @@
   [project-dir config-file]
   (let [js (as-> (str project-dir "/" config-file) $
                  (config/load-config (the-ns 'fhofherr.simple.core.dsl) $)
-                 (config/find-ci-jobs $)
+                 (config/find-ci-jobs $ job-fn/job-fn?)
                  (map (fn [[s v]] [(name s) (jobs/make-job-descriptor v)]) $)
                  (into {} $))]
     {:jobs js

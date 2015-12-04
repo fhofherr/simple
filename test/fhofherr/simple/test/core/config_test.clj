@@ -11,7 +11,8 @@
 (deftest find-ci-jobs
   (testing "finds ci jobs in the given namespace"
     (let [found-jobs (config/find-ci-jobs
-                      (the-ns 'fhofherr.simple.test.core.config-test))]
+                      (the-ns 'fhofherr.simple.test.core.config-test)
+                      job-fn/job-fn?)]
       (is (= #{['first-job #'first-job]
                ['second-job #'second-job]}
              (set found-jobs))))))

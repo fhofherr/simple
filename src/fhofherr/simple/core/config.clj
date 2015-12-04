@@ -1,12 +1,15 @@
 (ns fhofherr.simple.core.config
-  (:require [clojure.tools.logging :as log]
-            [fhofherr.simple.core [job-fn :as job-fn]]))
+  "Load and analyze a Clojure file containing Simple's configuration."
+  (:require [clojure.tools.logging :as log]))
 
-(def config-ns-name 'fhofherr.simple.projectdef)
+(def ^{:doc "Name of the namespace the file will be loaded into."}
+  config-ns-name 'fhofherr.simple.projectdef)
 
 (defn load-config
-  "Load the Simple CI configuration file located under the given `path`.
-  Returns the namespace into which the configration was loaded."
+  "Load the Simple CI configuration file located under the given `path` into the
+  [[config-ns-name]] namespace.While loading the file all public defs defined
+  in the `dsl-ns` are available. Returns the namespace into which the
+  configuration was loaded."
   [dsl-ns path]
   (when (find-ns config-ns-name)
     (log/info "Removing already existing configuration namespace:"
@@ -18,15 +21,14 @@
   (find-ns config-ns-name))
 
 (defn find-ci-jobs
-  "Find Simple CI jobs in the `cidef-ns` namespace. All mappings with
-  a truthy value for the key `:ci-job?` in their meta data are treated as
-  Simple CI jobs. Returns the public private mappings of the found jobs."
-  [cidef-ns]
+  "Find Simple CI jobs in the `cidef-ns` namespace. All mappings for whom 
+  the `job?` predicate returns a truthy value  are treated as
+  ci jobs. Returns the public private mappings of the found jobs."
+  [cidef-ns job?]
   (as-> cidef-ns $
         (ns-publics $)
-       ;; TODO pass job-fn? as param ==> no dependency to job-fn
         (filter #(-> %
                      (second)
                      (var-get)
-                     (job-fn/job-fn?))
+                     (job?))
                 $)))
