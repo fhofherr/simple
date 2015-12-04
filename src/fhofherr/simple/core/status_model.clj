@@ -1,4 +1,4 @@
-(ns fhofherr.simple.engine.status-model)
+(ns fhofherr.simple.core.status-model)
 
 (defprotocol Stateful
   "Define different states a object can have."

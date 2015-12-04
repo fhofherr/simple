@@ -1,6 +1,6 @@
-(ns fhofherr.simple.test.engine.job-descriptor-test
+(ns fhofherr.simple.test.core.job-descriptor-test
   (:require [clojure.test :refer :all]
-            [fhofherr.simple.engine [job-descriptor :as jobs]
+            [fhofherr.simple.core [job-descriptor :as jobs]
              [status-model :as sm]
              [job-fn :as job-fn]
              [job-execution-context :as ex-ctx]

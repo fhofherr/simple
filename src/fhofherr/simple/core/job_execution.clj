@@ -1,5 +1,5 @@
-(ns fhofherr.simple.engine.job-execution
-  (:require [fhofherr.simple.engine [status-model :as sm]
+(ns fhofherr.simple.core.job-execution
+  (:require [fhofherr.simple.core [status-model :as sm]
              [job-execution-context :as ex-ctx]]))
 
 (def ^:private possible-state-transitions {::created #{::queued}

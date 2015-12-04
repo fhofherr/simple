@@ -1,9 +1,9 @@
-(ns fhofherr.simple.dsl
+(ns fhofherr.simple.core.dsl
   "Functions and macros required to define a Simple CI project in a `simple.clj`
   project definition file. All public functions in this namespace are available
   from within the `simple.clj` project definition file."
   (:require [clojure.java.shell :refer [sh]]
-            [fhofherr.simple.engine [config :as config]
+            [fhofherr.simple.core [config :as config]
              [job-descriptor :as jobs]
              [job-execution-context :as ex-ctx]
              [job-fn :as job-fn]]))
@@ -19,10 +19,10 @@
 (defn- require-dsl
   [ref-map]
   (let [orig-require (:require ref-map [])
-        imports-dsl? (some #(= 'fhofherr.simple.dsl (first %)) orig-require)
+        imports-dsl? (some #(= 'fhofherr.simple.core.dsl (first %)) orig-require)
         new-require (if imports-dsl?
                       orig-require
-                      (conj orig-require ['fhofherr.simple.dsl :refer :all]))]
+                      (conj orig-require ['fhofherr.simple.core.dsl :refer :all]))]
     (assoc ref-map :require new-require)))
 
 (defmacro defci

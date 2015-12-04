@@ -1,6 +1,6 @@
-(ns fhofherr.simple.engine.job-descriptor
+(ns fhofherr.simple.core.job-descriptor
   (:require [clojure.tools.logging :as log]
-            [fhofherr.simple.engine [job-fn :as job-fn]
+            [fhofherr.simple.core [job-fn :as job-fn]
              [job-execution-context :as ex-ctx]
              [job-execution :as job-ex]]))
 

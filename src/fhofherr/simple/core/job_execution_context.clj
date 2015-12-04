@@ -1,5 +1,5 @@
-(ns fhofherr.simple.engine.job-execution-context
-  (:require [fhofherr.simple.engine.status-model :as sm]))
+(ns fhofherr.simple.core.job-execution-context
+  (:require [fhofherr.simple.core.status-model :as sm]))
 
 (def ^:private state-transitions {::created #{::executing}
                                   ::executing #{::failed ::successful}
