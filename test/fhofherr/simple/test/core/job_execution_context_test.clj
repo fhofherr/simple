@@ -1,6 +1,6 @@
-(ns fhofherr.simple.test.engine.job-execution-context-test
+(ns fhofherr.simple.test.core.job-execution-context-test
   (:require [clojure.test :refer :all]
-            [fhofherr.simple.engine [status-model :as sm]
+            [fhofherr.simple.core [status-model :as sm]
              [job-execution-context :as ex-ctx]]))
 
 (deftest job-execution-context

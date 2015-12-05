@@ -1,27 +1,37 @@
-(ns fhofherr.simple.engine.job-fn
+(ns fhofherr.simple.core.job-fn
+  "Create and manage Simple CI job functions.
+
+  A job function is the central element of a Simple CI job. In essence it is a
+  function of that takes a [[job-execution-context]], manipulates it, and
+  returns a modified version of it.
+
+  Job functions are created by joining multiple job step functions using
+  the [[make-job-fn]] function. This is the only way to create a job function."
   (:require [clojure.tools.logging :as log]
-            [fhofherr.simple.engine [job-execution-context :as ex-ctx]]))
+            [fhofherr.simple.core [job-execution-context :as ex-ctx]]))
 
 (defn ^:dynamic *log-step-execution*
-  "TODO document me"
+  "Log the execution of a job step. The deault implementation writes an info
+  level message to Simple CI's log file. The return value of this function is
+  ignored."
   [step-desc ctx]
   (if (ex-ctx/failed? ctx)
     (log/info (format "Step %s FAILED!" step-desc))
     (log/info (format "Step %s completed successfully." step-desc))))
 
 (defn job-step-fn?
-  "TODO document me"
+  "Test if `obj` is a job step function."
   [obj]
   (boolean (::job-step-fn? (meta obj))))
 
 (defn job-step-description
-  "TODO document me"
+  "Obtain the description of a job step function."
   [obj]
   {:pre [(job-step-fn? obj)]}
   (::job-step-description (meta obj)))
 
 (defn make-job-step-fn
-  "TODO document me"
+  "Create a job step function."
   [description f]
   {:pre [(fn? f)]}
   (letfn [(step-fn [ctx]

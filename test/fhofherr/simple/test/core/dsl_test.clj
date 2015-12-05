@@ -1,8 +1,8 @@
-(ns fhofherr.simple.test.dsl-test
+(ns fhofherr.simple.test.core.dsl-test
   (:require [clojure.test :refer :all]
             [fhofherr.clj-io.files :as files]
-            [fhofherr.simple.dsl :as dsl]
-            [fhofherr.simple.engine [job-execution-context :as ex-ctx]
+            [fhofherr.simple.core.dsl :as dsl]
+            [fhofherr.simple.core [job-execution-context :as ex-ctx]
              [job-fn :as job-fn]]))
 
 (defn- copy-script

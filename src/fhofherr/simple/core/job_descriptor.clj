@@ -1,30 +1,37 @@
-(ns fhofherr.simple.engine.job-descriptor
-  (:require [clojure.tools.logging :as log]
-            [fhofherr.simple.engine [job-fn :as job-fn]
-             [job-execution-context :as ex-ctx]
-             [job-execution :as job-ex]]))
+(ns fhofherr.simple.core.job-descriptor
+  "Create and manage job descriptors.
 
-(defrecord JobDescriptor [job-var job-fn executions executor])
+  Job descriptors are the run time representation of Simple CI jobs. Each job
+  descriptor holds the following elements:
 
-;; TODO pass job-fn instead of job-var (and maybe a job name)
-(defn make-job-descriptor
-  "Create a new job descriptor for the `job-var`. The returned job descriptor
-  has the following keys:
-
-  * `:job-var`: the `job-var` passed into the function.
+  * `:job-var`: the `var` that holds the job in the Simple CI configuration file.
   * `:job-fn`: the function the `job-var` points to.
   * `:executions`: a ref containing a vector of all known job executions.
     The oldest execution comes first in the vector. The youngest execution
     comes last. See [[add-job-execution!]] for details about job executions.
-    Initially empty.
   * `:executor`: an agent that asynchronously executes the job. The agent's
-    value is the id of the last executed job execution and can be used to
-    retrieve the execution from the `:executions` vector. See
-    [[schedule-job-execution]] for details about executing jobs. Initially set
-    to -1.
+    value is the position of the last executed job in the `:executions` vector.
+    See [[schedule-job-execution]] for details about executing jobs. If there
+    were no executions for the job yet, the `:executor`'s value is set to `-1`.
+    Using an agent as `:executor` ensures that at each point in time only one
+    instance of the job represented by this job descriptor can be executed.
 
-  Using an agent as `:executor` ensures that at each point in time only one
-  instance of the job represented by this job descriptor can be executed."
+  It is usually not necessary to access the fields of the job descriptor
+  directly. Instead the functions provided by this namespace should be used
+  to manage job descriptors and schedule job executions.
+  "
+  (:require [clojure.tools.logging :as log]
+            [fhofherr.simple.core [job-fn :as job-fn]
+             [job-execution-context :as ex-ctx]
+             [job-execution :as job-ex]]))
+
+(defrecord ^{:no-doc true} JobDescriptor [job-var job-fn executions executor])
+(alter-meta! #'->JobDescriptor assoc :no-doc true)
+(alter-meta! #'map->JobDescriptor assoc :no-doc true)
+
+;; TODO pass job-fn instead of job-var (and maybe a job name)
+(defn make-job-descriptor
+  "Create a new job descriptor for the `job-var`."
   [job-var]
   {:pre [(job-fn/job-fn? (var-get job-var))]}
   (-> {:job-var job-var
@@ -34,11 +41,12 @@
       (map->JobDescriptor)))
 
 (defn add-job-execution!
-  "Appends the job execution `exec` to the job descriptor `job-desc`'s
-  `:executions` vector in a transaction.
+  "Appends the job execution `exec` to `job-desc`'s `:executions` vector in
+  a transaction.
 
-  Returns the id of the execution with respect to the job descriptor's
-  `:executions` vector."
+  Returns the position of the execution in the job descriptor's `:executions`
+  vector. This value can be given as execution id to the other functions in
+  this namespace that require it."
   [job-desc exec]
   (let [exec-id (dosync
                  (as-> (:executions job-desc) $
@@ -54,10 +62,10 @@
   (get @(:executions job-desc) exec-id))
 
 (defn alter-job-execution!
-  "Apply the function `f` to the execution with id `exec-id` in the job
-  descriptor's vector of executions. Replace the old value by the job
-  execution returned by `f`. `f` is executed *outside* of a transaction
-  and may have side-effects."
+  "Apply the function `f` to the execution with id `exec-id` in `job-desc`'s
+  `:executions` vector. Replace the old value with the job execution returned
+  by `f`. `f` is executed *outside* of a transaction and may have
+  side-effects."
   [job-desc exec-id f & args]
   (let [apply-f (fn [exec]
                   {:post [(job-ex/job-execution? %)]}
@@ -73,7 +81,7 @@
 
 (defn execute-job!
   "Synchronously execute the job execution with id `exec-id`. See
-  [[schedule-job!]] for asynchronous job execution. "
+  [[schedule-job!]] for asynchronous job execution."
   [job-desc exec-id]
   (let [job-fn #(io! ((:job-fn job-desc) %))]
     (log/info "Starting execution" exec-id "of job" (:job-var job-desc))
@@ -84,8 +92,10 @@
     (log/info "Finished execution" exec-id "of job" (:job-var job-desc))))
 
 (defn schedule-job-execution!
-  "Schedules the job execution identified by `exec-id` by sending it
-  to the job descriptor's `:executor` using `send-off`.
+  "Schedules the job execution identified by `exec-id`. Sends it
+  to the job descriptor's `:executor` using `send-off`. The `:executor`
+  then uses [[execute-job!]] when it actually executes the scheduled
+  job execution.
 
   Returns the otherwise unchaged `job-desc` passed into the function."
   [job-desc exec-id]
@@ -93,7 +103,7 @@
             {:pre [(< last-exec-id exec-id)]}
             (execute-job! job-desc exec-id)
             exec-id)]
-    (log/info "Queueing execution" exec-id "of job" (:job-var job-desc))
+    (log/info "Scheduling execution" exec-id "of job" (:job-var job-desc))
     (alter-job-execution! job-desc exec-id job-ex/mark-queued)
     ;; Jobs catch any Throwable thrown by the job steps and do not
     ;; rethrow it. The executor should thus never fail under normal
@@ -103,8 +113,9 @@
 
 (defn schedule-job!
   "Create a new job execution using [[add-job-execution!]] and immediately
-  schedule it using [[schedule-job-execution!]]. Return the job execution's
-  id."
+  schedule it using [[schedule-job-execution!]].
+
+  Return the job execution's id as defined by [[add-job-execution!]]."
   [job-desc exec]
   {:pre [(job-ex/job-execution? exec)]}
   (let [exec-id (add-job-execution! job-desc exec)]
