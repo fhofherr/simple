@@ -1,4 +1,5 @@
 (ns fhofherr.simple.core
+  "Simple CI's application core."
   (:require [fhofherr.simple.core.dsl] ; Required to pass it to load-config
             [fhofherr.simple.core [config :as config]
              [job-fn :as job-fn]
@@ -7,6 +8,7 @@
              [job-execution-context :as ex-ctx]]))
 
 (defn load-core
+  "Bootstrap Simple CI using the `config-file` contained in `project-dir`."
   [project-dir config-file]
   (let [js (as-> (str project-dir "/" config-file) $
                  (config/load-config (the-ns 'fhofherr.simple.core.dsl) $)
@@ -17,11 +19,14 @@
      :project-dir project-dir}))
 
 (defn has-job?
+  "Check if the `core` has a job named `job-name`."
   [core job-name]
   (contains? (:jobs core) (name job-name)))
 
 (defn start-job!
+  "Start the job named `job-name`."
   [core job-name]
+  {:pre [(has-job? core job-name)]}
   (if-let [jd (get-in core [:jobs (name job-name)])]
     (as-> core $
           (:project-dir $)
