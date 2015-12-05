@@ -20,15 +20,15 @@
     (load-file path))
   (find-ns config-ns-name))
 
-(defn find-ci-jobs
-  "Find Simple CI jobs in the `cidef-ns` namespace. All mappings for whom 
-  the `job?` predicate returns a truthy value  are treated as
-  ci jobs. Returns the public private mappings of the found jobs."
-  [cidef-ns job?]
+(defn filter-publics
+  "Filter the public mappings in the `cidef-ns` namespace. Returns the public
+  private mappings of `cidef-ns` for whom the predicate `pred` returns a
+  truthy value."
+  [cidef-ns pred]
   (as-> cidef-ns $
         (ns-publics $)
         (filter #(-> %
                      (second)
                      (var-get)
-                     (job?))
+                     (pred))
                 $)))

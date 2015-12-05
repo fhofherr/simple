@@ -12,7 +12,7 @@
   [project-dir config-file]
   (let [js (as-> (str project-dir "/" config-file) $
                  (config/load-config (the-ns 'fhofherr.simple.core.dsl) $)
-                 (config/find-ci-jobs $ job-fn/job-fn?)
+                 (config/filter-publics $ job-fn/job-fn?)
                  (map (fn [[s v]] [(name s) (jobs/make-job-descriptor v)]) $)
                  (into {} $))]
     {:jobs js

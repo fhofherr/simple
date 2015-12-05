@@ -8,9 +8,9 @@
 (def second-job (job-fn/make-job-fn {:test (job-fn/make-job-step-fn "test"
                                                                     identity)}))
 
-(deftest find-ci-jobs
+(deftest filter-publics
   (testing "finds ci jobs in the given namespace"
-    (let [found-jobs (config/find-ci-jobs
+    (let [found-jobs (config/filter-publics
                       (the-ns 'fhofherr.simple.test.core.config-test)
                       job-fn/job-fn?)]
       (is (= #{['first-job #'first-job]
