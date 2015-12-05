@@ -10,12 +10,13 @@
 (defn load-core
   "Bootstrap Simple CI using the `config-file` contained in `project-dir`."
   [project-dir config-file]
-  (let [js (as-> (str project-dir "/" config-file) $
-                 (config/load-config (the-ns 'fhofherr.simple.core.dsl) $)
-                 (config/filter-publics $ job-fn/job-fn?)
-                 (map (fn [[s v]] [(name s) (jobs/make-job-descriptor v)]) $)
-                 (into {} $))]
-    {:jobs js
+  (let [cidef-ns (as-> (str project-dir "/" config-file) $
+                       (config/load-config (the-ns 'fhofherr.simple.core.dsl) $))
+        jobs (as-> cidef-ns $
+                   (config/filter-publics $ job-fn/job-fn?)
+                   (map (fn [[s v]] [(name s) (jobs/make-job-descriptor v)]) $)
+                   (into {} $))]
+    {:jobs jobs
      :project-dir project-dir}))
 
 (defn has-job?

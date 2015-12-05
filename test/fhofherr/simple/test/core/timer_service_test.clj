@@ -1,6 +1,6 @@
-(ns fhofherr.simple.test.core.timer-test
+(ns fhofherr.simple.test.core.timer-service-test
   (:require [clojure.test :refer :all]
-            [fhofherr.simple.core.timer :as timer])
+            [fhofherr.simple.core.timer-service :as timer])
   (:import [java.util.concurrent TimeUnit]))
 
 (deftest task-registration-and-deregistration

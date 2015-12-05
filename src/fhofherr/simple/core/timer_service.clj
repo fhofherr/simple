@@ -1,4 +1,4 @@
-(ns fhofherr.simple.core.timer
+(ns fhofherr.simple.core.timer-service
   (:require [clojure.tools.logging :as log])
   (:import [java.util.concurrent TimeUnit]))
 
