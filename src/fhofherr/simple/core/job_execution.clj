@@ -1,4 +1,15 @@
 (ns fhofherr.simple.core.job-execution
+  "Create and manage job executions.
+
+  Job executions represent a single execution of a Simple CI job. A job
+  execution owns a [[job-descriptor]]. During its lifetime a job execution
+  transitions through the following states:
+
+  * *created*: the job execution has just been created.
+  * *queued*: the job execution has been queued for execution. It has not been
+    executed yet.
+  * *executing*: the job execution is currently executing.
+  * *finished*: the job execution is finished executing."
   (:require [fhofherr.simple.core [status-model :as sm]
              [job-execution-context :as ex-ctx]]))
 
@@ -10,7 +21,7 @@
                                     (keys)
                                     (set)))
 
-(defrecord JobExecution [state context]
+(defrecord ^{:no-doc true} JobExecution [state context]
 
   sm/Stateful
   (current-state [^JobExecution this] (:state this))
@@ -28,31 +39,38 @@
           (get possible-state-transitions $)
           (contains? $ s))))
 
+(alter-meta! #'->JobExecution assoc :no-doc true)
+(alter-meta! #'map->JobExecution assoc :no-doc true)
+
 (defn job-execution?
   "Check if `obj` is a job execution"
   [obj]
   (instance? JobExecution obj))
 
 (defn make-job-execution
-  [context]
-  (map->JobExecution {:context context
+  "Create a new job execution and make it owner of the job execution
+  context `ctx`."
+  [ctx]
+  (map->JobExecution {:context ctx
                       :state ::created}))
 (defn created?
+  "Check if `job-exec`s state is *created*."
   [^JobExecution job-exec]
   (= ::created (sm/current-state job-exec)))
 
 (defn mark-queued
+  "Mark `job-exec` as *queued*."
   [^JobExecution job-exec]
   (sm/transition-to-state job-exec ::queued))
 
 (defn queued?
+  "Check if `job-exec`s state is *queued*."
   [^JobExecution job-exec]
   (= ::queued (sm/current-state job-exec)))
 
 (defn update-context
-  "Apply the function `f` job the job execuction `job-exec`'s
-  job execution context and replace the old context with the new one.
-  `f` must return another job execution context."
+  "Apply the function `f` job the job execuction `job-exec`'s job execution
+  context. Replace the old context with the new one returned by `f`."
   [^JobExecution job-exec f & args]
   (letfn [(apply-f [ctx]
             {:post [(ex-ctx/job-execution-context? %)]}
@@ -60,16 +78,19 @@
     (update-in job-exec [:context] apply-f)))
 
 (defn mark-executing
+  "Mark `job-exec` as *executing*."
   [^JobExecution job-exec]
   (as-> job-exec $
         (update-context $ ex-ctx/mark-executing)
         (sm/transition-to-state $ ::executing)))
 
 (defn executing?
+  "Check if `job-exec`s state is *executing*."
   [^JobExecution job-exec]
   (= ::executing (sm/current-state job-exec)))
 
 (defn mark-finished
+  "Mark `job-exec` as *finished*."
   [^JobExecution job-exec]
   (letfn [(update-ctx [ctx] (if (ex-ctx/failed? ctx)
                               ctx
@@ -79,5 +100,6 @@
           (sm/transition-to-state $ ::finished))))
 
 (defn finished?
+  "Check if `job-exec`s state is *finished*."
   [^JobExecution job-exec]
   (= ::finished (sm/current-state job-exec)))
