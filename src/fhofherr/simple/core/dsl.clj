@@ -1,7 +1,7 @@
 (ns fhofherr.simple.core.dsl
-  "Functions and macros required to define a Simple CI project in a `simple.clj`
-  project definition file. All public functions in this namespace are available
-  from within the `simple.clj` project definition file."
+  "Functions and macros required to configure Simple CI in a `simple.clj` file.
+  All public functions in this namespace are available from within the
+  `simple.clj` file."
   (:require [clojure.java.shell :refer [sh]]
             [fhofherr.simple.core [config :as config]
              [job-descriptor :as jobs]
