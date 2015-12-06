@@ -24,11 +24,14 @@
 (defn start-simple-ci
   []
   (when-not simple-core
-    (alter-var-root #'simple-core (constantly (core/load-core "." "simple.clj")))))
+    (alter-var-root #'simple-core (constantly (-> (core/load-core "." "simple.clj")
+                                                  (core/start-core))))))
 
 (defn stop-simple-ci
   []
   (when simple-core
+    (-> simple-core
+        (core/stop-core))
     (alter-var-root #'simple-core (constantly nil))))
 
 (defn run-simple-test-job
