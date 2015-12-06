@@ -97,4 +97,4 @@
                   (apply-step before false)
                   (apply-step test false)
                   (apply-step after true))))]
-    (with-meta job {::job-fn? true})))
+    (vary-meta job assoc ::job-fn? true)))
