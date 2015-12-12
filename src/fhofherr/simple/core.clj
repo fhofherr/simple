@@ -3,7 +3,7 @@
   (:require [fhofherr.simple.core.dsl] ; Required to pass it to load-config
             [fhofherr.simple.core [config :as config]
              [job-fn :as job-fn]
-             [job-descriptor :as jobs]
+             [job-descriptor :as jobs-desc]
              [job-execution :as job-ex]
              [job-execution-context :as ex-ctx]
              [subsystems :as subsystems]]))
@@ -11,7 +11,7 @@
 (defn- configure-jobs-subsystem
   [cidef-ns]
   (as-> cidef-ns $
-        (config/filter-publics $ jobs/job-descriptor?)
+        (config/filter-publics $ jobs-desc/job-descriptor?)
         (map (fn [[s v]] [(name s) (var-get v)]) $)
         (into {} $)))
 
@@ -56,4 +56,4 @@
           (:project-dir $)
           (ex-ctx/make-job-execution-context $)
           (job-ex/make-job-execution $)
-          (jobs/schedule-job! jd $))))
+          (jobs-desc/schedule-job! jd $))))
