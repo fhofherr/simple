@@ -25,7 +25,7 @@ java -jar simple-0.1.0-standalone.jar <directory containing simple.clj>
 * [ ] Edit [CHANGELOG.md](CHANGELOG.md) and update sections.
 * [ ] Execute `lein uberjar` and use it to execute Simple's own tests.
 * [ ] `git flow release finish <version number>`
-* [ ] `git flow release publish <version number>`
+* [ ] `git push --follow-tags origin master`
 
 ## License
 
