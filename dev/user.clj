@@ -7,17 +7,9 @@
   []
   (t/run-all-tests #"fhofherr.(simple|clj-io)\.test(\..+)-test"))
 
-(defn- do-run-integration-tests
-  []
-  (t/run-all-tests #"fhofherr.simple\.integration-test(\..+)-test"))
-
 (defn run-unit-tests
   []
   (repl/refresh :after 'user/do-run-unit-tests))
-
-(defn run-integration-tests
-  []
-  (repl/refresh :after 'user/do-run-integration-tests))
 
 (def simple-core nil)
 

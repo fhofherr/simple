@@ -11,22 +11,16 @@
   (-> (core/load-core project-dir "simple.clj")
       (core/start-core)))
 
-(defn run
-  [project-dir]
-  (let [core (start-simple-ci project-dir)
-        ci-job (->> core
-                    (:jobs)
-                    (first))
-        exec-id (core/start-job! core (first ci-job))]
-    (await-for 60000 (:executor (second ci-job)))
-    (if-not (jobs/failed? (second ci-job))
-      (println "Tests successful!")
-      (println "Tests failed!"))
-    (core/stop-core core)))
-
 (defn -main
   [& args]
-  (try
-    (run (first args))
-    (finally
-      (shutdown-agents))))
+  (let [core (start-simple-ci (first args))]
+    (doto (Runtime/getRuntime)
+      (.addShutdownHook (Thread. (fn []
+                                   (try
+                                     (core/stop-core core)
+                                     (finally
+                                       (shutdown-agents)))))))
+    (while true
+      (try
+        (Thread/sleep 60000)
+        (catch Throwable t)))))
