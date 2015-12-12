@@ -3,7 +3,7 @@
             [fhofherr.clj-io.files :as files]
             [fhofherr.simple.core.dsl :as dsl]
             [fhofherr.simple.core [job-execution-context :as ex-ctx]
-             [job-fn :as job-fn]]))
+             [job-descriptor :as job-desc]]))
 
 (defn- copy-script
   [path script-name]
@@ -36,4 +36,4 @@
 (deftest define-a-ci-job
 
   (testing "defines a Simple CI job"
-    (is (job-fn/job-fn? unit-test-job))))
+    (is (job-desc/job-descriptor? unit-test-job))))

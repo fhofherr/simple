@@ -29,6 +29,11 @@
 (alter-meta! #'->JobDescriptor assoc :no-doc true)
 (alter-meta! #'map->JobDescriptor assoc :no-doc true)
 
+(defn job-descriptor?
+  "Check if `o` is a job descriptor."
+  [o]
+  (instance? JobDescriptor o))
+
 (defn make-job-descriptor
   "Create a new job descriptor for the `job-fn`."
   [job-name job-fn]
