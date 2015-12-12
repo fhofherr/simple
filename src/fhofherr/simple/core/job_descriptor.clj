@@ -25,7 +25,12 @@
              [job-execution-context :as ex-ctx]
              [job-execution :as job-ex]]))
 
-(defrecord ^{:no-doc true} JobDescriptor [job-name job-fn executions executor])
+(defrecord ^{:no-doc true} JobDescriptor
+           [job-name
+            job-fn
+            executions
+            executor])
+
 (alter-meta! #'->JobDescriptor assoc :no-doc true)
 (alter-meta! #'map->JobDescriptor assoc :no-doc true)
 
@@ -36,12 +41,13 @@
 
 (defn make-job-descriptor
   "Create a new job descriptor for the `job-fn`."
-  [job-name job-fn]
+  [job-name job-fn & {:keys [triggers] :or {triggers []}}]
   {:pre [(job-fn/job-fn? job-fn)]}
   (-> {:job-name job-name
        :job-fn job-fn
        :executions (ref [] :validator vector?)
-       :executor (agent -1)}
+       :executor (agent -1)
+       :triggers triggers}
       (map->JobDescriptor)))
 
 (defn add-job-execution!

@@ -52,7 +52,7 @@
   of the job.
 
   The result of the macro is a job descriptor bound to the `job-name`."
-  [job-name & {:keys [before test after]}]
+  [job-name & {:keys [before test after triggers]}]
   (let [b (and before
                `(job-fn/make-job-step-fn '~before ~before))
         t (and test
@@ -62,7 +62,10 @@
         j `(job-fn/make-job-fn {:before ~b
                                 :test ~t
                                 :after ~a})]
-    `(def ~job-name (jobs/make-job-descriptor (name '~job-name) ~j))))
+    `(def ~job-name (jobs/make-job-descriptor
+                     (name '~job-name)
+                     ~j
+                     :triggers ~triggers))))
 
 (defn execute
   "Create a test command that executes the given executable using

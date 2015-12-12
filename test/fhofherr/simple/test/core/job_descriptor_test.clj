@@ -34,7 +34,15 @@
       (is (= "successful-job" (:job-name job-desc)))
       (is (= successful-job (:job-fn job-desc)))
       (is (= [] @(:executions job-desc)))
-      (is (= -1 @(:executor job-desc))))))
+      (is (= -1 @(:executor job-desc)))
+      (is (empty? (:triggers job-desc)))))
+
+  (testing "optionally add triggers to a job descriptor"
+    (let [trigger-cfg {:type :timer :args [:every 5 :seconds]}
+          job-desc (jobs/make-job-descriptor "successful-job"
+                                             successful-job
+                                             :triggers [trigger-cfg])]
+      (is (= [trigger-cfg] (:triggers job-desc))))))
 
 (deftest add-job-execution!
 
