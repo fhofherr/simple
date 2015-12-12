@@ -5,7 +5,7 @@
   descriptor holds the following elements:
 
   * `:job-name`: the name of the job.
-  * `:job-fn`: the function the `job-var` points to.
+  * `:job-fn`: the function the `job-name` points to.
   * `:executions`: a ref containing a vector of all known job executions.
     The oldest execution comes first in the vector. The youngest execution
     comes last. See [[add-job-execution!]] for details about job executions.
@@ -25,7 +25,7 @@
              [job-execution-context :as ex-ctx]
              [job-execution :as job-ex]]))
 
-(defrecord ^{:no-doc true} JobDescriptor [job-var job-fn executions executor])
+(defrecord ^{:no-doc true} JobDescriptor [job-name job-fn executions executor])
 (alter-meta! #'->JobDescriptor assoc :no-doc true)
 (alter-meta! #'map->JobDescriptor assoc :no-doc true)
 
