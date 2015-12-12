@@ -89,12 +89,7 @@
   (letfn [(job [ctx]
             (io!
              (->> ctx
-                  ;; TODO should the context be marked as executing here
-                  ;; instead of when transitioning the job execution?
-                  ;; This would require to mark the context successful after
-                  ;; all steps have complented. But only if none of them failed
-                  ;; the test.
                   (apply-step before false)
                   (apply-step test false)
                   (apply-step after true))))]
-    (with-meta job {::job-fn? true})))
+    (vary-meta job assoc ::job-fn? true)))

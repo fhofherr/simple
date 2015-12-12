@@ -37,26 +37,35 @@
     `(ns ~config/config-ns-name
        ~@new-refs)))
 
+;; TODO try to make the macro smaller
 (defmacro defjob
-  "Define a Simple CI job. In its most basic form a Simple CI job has a name
-  and a test command, e.g.:
+  "Define a Simple CI job.
+
+  In its most basic form a Simple CI job has a name and a test command, e.g.:
 
   ```clojure
   (defjob some-job-name
     :test test-command)
   ```
 
-  See [[job-fn/make-job]] for further details about Simple CI jobs."
-  [job-name & {:keys [before test after]}]
-  (let [before# (and before
-                     `(job-fn/make-job-step-fn '~before ~before))
-        test# (and test
-                   `(job-fn/make-job-step-fn '~test ~test))
-        after# (and after
-                    `(job-fn/make-job-step-fn '~after ~after))]
-    `(def ~job-name (job-fn/make-job-fn {:before ~before#
-                                         :test ~test#
-                                         :after ~after#}))))
+  All keys available to [[job-fn/make-job]] can be used during the defnition
+  of the job.
+
+  The result of the macro is a job descriptor bound to the `job-name`."
+  [job-name & {:keys [before test after triggers]}]
+  (let [b (and before
+               `(job-fn/make-job-step-fn '~before ~before))
+        t (and test
+               `(job-fn/make-job-step-fn '~test ~test))
+        a (and after
+               `(job-fn/make-job-step-fn '~after ~after))
+        j `(job-fn/make-job-fn {:before ~b
+                                :test ~t
+                                :after ~a})]
+    `(def ~job-name (jobs/make-job-descriptor
+                     (name '~job-name)
+                     ~j
+                     :triggers ~triggers))))
 
 (defn execute
   "Create a test command that executes the given executable using

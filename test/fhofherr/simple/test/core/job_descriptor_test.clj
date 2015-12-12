@@ -30,22 +30,30 @@
 (deftest make-job-descriptor
 
   (testing "creates a job descriptor for a job var"
-    (let [job-desc (jobs/make-job-descriptor #'successful-job)]
-      (is (= #'successful-job (:job-var job-desc)))
+    (let [job-desc (jobs/make-job-descriptor "successful-job" successful-job)]
+      (is (= "successful-job" (:job-name job-desc)))
       (is (= successful-job (:job-fn job-desc)))
       (is (= [] @(:executions job-desc)))
-      (is (= -1 @(:executor job-desc))))))
+      (is (= -1 @(:executor job-desc)))
+      (is (empty? (:triggers job-desc)))))
+
+  (testing "optionally add triggers to a job descriptor"
+    (let [trigger-cfg {:type :timer :args [:every 5 :seconds]}
+          job-desc (jobs/make-job-descriptor "successful-job"
+                                             successful-job
+                                             :triggers [trigger-cfg])]
+      (is (= [trigger-cfg] (:triggers job-desc))))))
 
 (deftest add-job-execution!
 
   (testing "add job execution to job descriptor"
-    (let [job-desc (jobs/make-job-descriptor #'successful-job)
+    (let [job-desc (jobs/make-job-descriptor "successful-job" successful-job)
           exec (job-ex/make-job-execution initial-ctx)
           exec-id (jobs/add-job-execution! job-desc exec)]
       (is (= exec (get @(:executions job-desc) exec-id))))))
 
 (deftest alter-job-execution!
-  (let [job-desc (jobs/make-job-descriptor #'successful-job)
+  (let [job-desc (jobs/make-job-descriptor "successful-job" successful-job)
         exec (job-ex/make-job-execution initial-ctx)
         exec-id (jobs/add-job-execution! job-desc exec)]
 
@@ -63,7 +71,7 @@
 
   ;; Since this actually alters the job-desc we create a new one here.
   (testing "exec is replaced by f's result"
-    (let [job-desc (jobs/make-job-descriptor #'successful-job)
+    (let [job-desc (jobs/make-job-descriptor "successful-job" successful-job)
           exec (job-ex/make-job-execution initial-ctx)
           exec-id (jobs/add-job-execution! job-desc exec)
           alter-exec #(assoc % :altered true)]
@@ -74,7 +82,7 @@
   (testing "set a queued and an executing job's status"
     (reset! waiting-job-latch (CountDownLatch. 1))
 
-    (let [job-desc (jobs/make-job-descriptor #'waiting-job)
+    (let [job-desc (jobs/make-job-descriptor "waiting-job" waiting-job)
           exec (job-ex/make-job-execution initial-ctx)
           exec-id-1 (jobs/schedule-job! job-desc exec)
           exec-id-2 (jobs/schedule-job! job-desc exec)]
@@ -94,7 +102,7 @@
       (is (jobs/successful? job-desc))))
 
   (testing "mark execution and descriptor as failed if the job fails"
-    (let [job-desc (jobs/make-job-descriptor #'failing-job)
+    (let [job-desc (jobs/make-job-descriptor "failing-job" failing-job)
           exec (job-ex/make-job-execution initial-ctx)
           exec-id (jobs/schedule-job! job-desc exec)]
       (await-for 5000 (:executor job-desc))

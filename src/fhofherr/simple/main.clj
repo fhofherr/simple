@@ -8,7 +8,8 @@
   [project-dir]
   {:pre [(not-empty project-dir)
          (.isDirectory (io/as-file project-dir))]}
-  (core/load-core project-dir "simple.clj"))
+  (-> (core/load-core project-dir "simple.clj")
+      (core/start-core)))
 
 (defn run
   [project-dir]
@@ -20,7 +21,8 @@
     (await-for 60000 (:executor (second ci-job)))
     (if-not (jobs/failed? (second ci-job))
       (println "Tests successful!")
-      (println "Tests failed!"))))
+      (println "Tests failed!"))
+    (core/stop-core core)))
 
 (defn -main
   [& args]
