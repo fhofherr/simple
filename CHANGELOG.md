@@ -32,4 +32,7 @@ to [Semantic Versioning](http://semver.org/).
 
 * Simple can execute its own tests via `lein run $PWD`
 
+* Job triggers can be defined using the `:triggers` keyword in
+  `simple.clj`
+
 [unreleased]: https://github.com/fhofherr/simple/compare/0.1.0...HEAD

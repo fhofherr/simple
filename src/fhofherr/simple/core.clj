@@ -6,7 +6,21 @@
              [job-descriptor :as jobs-desc]
              [job-execution :as job-ex]
              [job-execution-context :as ex-ctx]
+             [timer-service :as timer-service]
+             [triggers :as triggers]
              [subsystems :as subsystems]]))
+
+(declare start-job!)
+
+(defn- start-timer-service
+  [core]
+  (timer-service/start-timer-service (:timer-service core))
+  core)
+
+(defn- stop-timer-service
+  [core]
+  (timer-service/stop-timer-service (:timer-service core))
+  core)
 
 (defn- configure-jobs-subsystem
   [cidef-ns]
@@ -15,42 +29,48 @@
         (map (fn [[s v]] [(name s) (var-get v)]) $)
         (into {} $)))
 
+(defn- start-jobs-subsystem
+  [core]
+  (doseq [[_ job] (:jobs core)
+          trigger-cfg (:triggers job)]
+    (triggers/register-trigger core
+                               trigger-cfg
+                               #(start-job! core (:job-name job))))
+  core)
+
 (defn load-core
   "Bootstrap Simple CI using the `config-file` contained in `project-dir`."
   [project-dir config-file]
   (let [cidef-ns (as-> (str project-dir "/" config-file) $
                        (config/load-config (the-ns 'fhofherr.simple.core.dsl) $))
         jobs (configure-jobs-subsystem cidef-ns)]
-    (-> {:project-dir project-dir
-         ::started false}
-        (subsystems/register-subsystem :jobs jobs))))
+    (-> {:project-dir project-dir}
+        (subsystems/register-subsystem :timer-service
+                                       (timer-service/make-timer-service)
+                                       :start start-timer-service
+                                       :stop stop-timer-service)
+        (subsystems/register-subsystem :jobs jobs
+                                       :start start-jobs-subsystem))))
 
 (defn start-core
   [core]
   (-> core
-      (subsystems/start)
-      (assoc ::started true)))
+      (subsystems/start)))
 
 (defn stop-core
   [core]
   (-> core
-      (subsystems/stop)
-      (assoc ::started false)))
+      (subsystems/stop)))
 
 (defn has-job?
   "Check if the `core` has a job named `job-name`."
   [core job-name]
   (contains? (:jobs core) (name job-name)))
 
-(defn started?
-  [core]
-  (::started core))
-
 (defn start-job!
   "Start the job named `job-name`."
   [core job-name]
-  {:pre [(started? core)
-         (has-job? core job-name)]}
+  {:pre [(has-job? core job-name)]}
   (if-let [jd (get-in core [:jobs (name job-name)])]
     (as-> core $
           (:project-dir $)
