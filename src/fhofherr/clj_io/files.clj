@@ -1,6 +1,7 @@
 (ns fhofherr.clj-io.files
   (:refer-clojure :exclude [exists?])
-  (:require [clojure.java.io :as io])
+  (:require [clojure.java.io :as io]
+            [clojure.set :as s])
   (:import [java.nio.file CopyOption
             FileVisitResult
             Files
@@ -42,7 +43,7 @@
   [path expected-perms]
   (->> path
        (posix-permissions)
-       (clojure.set/intersection expected-perms)
+       (s/intersection expected-perms)
        (not-empty)
        (boolean)))
 
@@ -100,7 +101,7 @@
                       (into $ args)
                       (partition 2 $)
                       (map (fn [[t p]] (parse-perms p t)) $)
-                      (apply clojure.set/union $)))]
+                      (apply s/union $)))]
     (set-posix-permissions path perms))
   path)
 

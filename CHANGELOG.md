@@ -7,6 +7,8 @@ to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased][unreleased]
 
+## 0.1.0 - 2015-12-12
+
 ### Added
 
 * Created the (`simple`)[https://github.com/fhofherr/simple] project
