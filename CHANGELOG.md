@@ -37,4 +37,4 @@ to [Semantic Versioning](http://semver.org/).
 * Job triggers can be defined using the `:triggers` keyword in
   `simple.clj`
 
-[unreleased]: https://github.com/fhofherr/simple/compare/0.1.0...HEAD
+[unreleased]: https://github.com/fhofherr/simple/compare/v0.1.0...master
