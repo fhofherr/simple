@@ -12,7 +12,8 @@
   [cidef-ns]
   (as-> cidef-ns $
         (config/filter-publics $ job-fn/job-fn?)
-        (map (fn [[s v]] [(name s) (jobs/make-job-descriptor v)]) $)
+        (map (fn [[s v]] [(name s) (jobs/make-job-descriptor (name s)
+                                                             (var-get v))]) $)
         (into {} $)))
 
 (defn load-core

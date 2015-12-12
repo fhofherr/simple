@@ -4,7 +4,7 @@
   Job descriptors are the run time representation of Simple CI jobs. Each job
   descriptor holds the following elements:
 
-  * `:job-var`: the `var` that holds the job in the Simple CI configuration file.
+  * `:job-name`: the name of the job.
   * `:job-fn`: the function the `job-var` points to.
   * `:executions`: a ref containing a vector of all known job executions.
     The oldest execution comes first in the vector. The youngest execution
@@ -29,13 +29,12 @@
 (alter-meta! #'->JobDescriptor assoc :no-doc true)
 (alter-meta! #'map->JobDescriptor assoc :no-doc true)
 
-;; TODO pass job-fn instead of job-var (and maybe a job name)
 (defn make-job-descriptor
-  "Create a new job descriptor for the `job-var`."
-  [job-var]
-  {:pre [(job-fn/job-fn? (var-get job-var))]}
-  (-> {:job-var job-var
-       :job-fn (var-get job-var)
+  "Create a new job descriptor for the `job-fn`."
+  [job-name job-fn]
+  {:pre [(job-fn/job-fn? job-fn)]}
+  (-> {:job-name job-name
+       :job-fn job-fn
        :executions (ref [] :validator vector?)
        :executor (agent -1)}
       (map->JobDescriptor)))
@@ -84,12 +83,12 @@
   [[schedule-job!]] for asynchronous job execution."
   [job-desc exec-id]
   (let [job-fn #(io! ((:job-fn job-desc) %))]
-    (log/info "Starting execution" exec-id "of job" (:job-var job-desc))
+    (log/info "Starting execution" exec-id "of job" (:job-name job-desc))
     (-> job-desc
         (alter-job-execution! exec-id job-ex/mark-executing)
         (alter-job-execution! exec-id job-ex/update-context job-fn)
         (alter-job-execution! exec-id job-ex/mark-finished))
-    (log/info "Finished execution" exec-id "of job" (:job-var job-desc))))
+    (log/info "Finished execution" exec-id "of job" (:job-name job-desc))))
 
 (defn schedule-job-execution!
   "Schedules the job execution identified by `exec-id`. Sends it
@@ -103,7 +102,7 @@
             {:pre [(< last-exec-id exec-id)]}
             (execute-job! job-desc exec-id)
             exec-id)]
-    (log/info "Scheduling execution" exec-id "of job" (:job-var job-desc))
+    (log/info "Scheduling execution" exec-id "of job" (:job-name job-desc))
     (alter-job-execution! job-desc exec-id job-ex/mark-queued)
     ;; Jobs catch any Throwable thrown by the job steps and do not
     ;; rethrow it. The executor should thus never fail under normal
