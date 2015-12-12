@@ -11,7 +11,7 @@ to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
-* Created the (`simple`)[https://github.com/fhofherr/simple] project
+* Created the [`simple`](https://github.com/fhofherr/simple) project
 
 * Implemented execution of shell scripts or other programs which in turn
   may execute tests. An exit code of 0 signals successful test
