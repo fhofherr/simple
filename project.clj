@@ -1,4 +1,4 @@
-(defproject simple "0.1.0"
+(defproject simple "0.2.0-SNAPSHOT"
   :description "A very simple CI server for individual projects."
   :url "https://github.com/fhofherr/simple"
   :license {:name "MIT"
